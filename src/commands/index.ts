@@ -14,12 +14,14 @@ import {
 import { destroyAllPoolsAndDisks } from "./destroy-all-pools-and-disks.ts";
 import { aptSourcesList } from "./apt-sources-list.ts";
 import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
+import { debian4SystemConfiguration } from "./debian-4-system-configuration.ts";
 
 const commands: Record<string, Command> = {
   debian,
   debian1PrepareInstallEnv,
   debian2DiskFormatting,
   debian3SystemInstallation,
+  debian4SystemConfiguration,
   destroyAllPoolsAndDisks,
   nullCommand: Command.custom(),
   upgradeOsPackages: InstallOsPackage.upgradePackages(),
