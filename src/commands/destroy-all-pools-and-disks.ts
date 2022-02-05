@@ -4,7 +4,6 @@ import { ensureSuccessful, ensureSuccessfulStdOut } from "../os/exec.ts";
 import { InstallOsPackage } from "./common/os-package.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/target-user.ts";
-import { sleep } from "../os/sleep.ts";
 
 export const destroyAllPoolsAndDisks = Command.custom()
   .withLocks([FileSystemPath.of(ROOT, config.DISK)])
@@ -36,16 +35,13 @@ export const destroyAllPoolsAndDisks = Command.custom()
     }
     const pools =
       (await ensureSuccessfulStdOut(ROOT, "zpool list -o name -H".split(" ")))
-        .split("\n");
+        .split("\n").filter(Boolean);
     await Promise.all(
       pools.map((pool) =>
         ensureSuccessful(ROOT, `zpool destroy -f ${pool}`.split(" "))
       ),
     );
 
-    console.log("destroyAllPoolsAndDisks: running...sleeping(5)...");
-    await sleep(5);
-    console.log("destroyAllPoolsAndDisks: running...sleeping(5)...DONE.");
     await ensureSuccessful(ROOT, ["wipefs", "--all", config.DISK]);
     await ensureSuccessful(ROOT, ["sgdisk", "--zap-all", config.DISK]);
     console.log("destroyAllPoolsAndDisks: running...DONE.");

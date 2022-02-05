@@ -1,5 +1,4 @@
 import { Command } from "../model/command.ts";
-import { destroyAllPoolsAndDisks } from "./destroy-all-pools-and-disks.ts";
 import { ensureSuccessful } from "../os/exec.ts";
 import { config } from "../config.ts";
 import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
@@ -9,12 +8,9 @@ import { sleep } from "../os/sleep.ts";
 
 export const zfsPartitions = Command.custom()
   .withLocks([FileSystemPath.of(ROOT, config.DISK)])
-  .withDependencies([debian1PrepareInstallEnv, destroyAllPoolsAndDisks])
+  .withDependencies([debian1PrepareInstallEnv])
   .withRun(async () => {
     console.log("zfsPartitions: running...");
-    console.log("zfsPartitions: running...sleeping(5)...");
-    await sleep(5);
-    console.log("zfsPartitions: running...sleeping(5)...DONE.");
     await ensureSuccessful(ROOT, [
       "sgdisk",
       "--new=2:1M:+512M",
@@ -41,9 +37,6 @@ export const zfsBootPool = Command.custom()
   .withDependencies([zfsPartitions])
   .withRun(async () => {
     console.log("zfsBootPool: running...");
-    console.log("zfsBootPool: running...sleeping(5)...");
-    await sleep(5);
-    console.log("zfsBootPool: running...sleeping(5)...DONE.");
     await ensureSuccessful(ROOT, [
       "zpool",
       "create",
@@ -92,9 +85,6 @@ export const zfsRootPool = Command.custom()
   .withDependencies([zfsPartitions])
   .withRun(async () => {
     console.log("zfsRootPool: running...");
-    console.log("zfsRootPool: running...sleeping(5)...");
-    await sleep(5);
-    console.log("zfsRootPool: running...sleeping(5)...DONE.");
     await ensureSuccessful(ROOT, [
       "zpool",
       "create",

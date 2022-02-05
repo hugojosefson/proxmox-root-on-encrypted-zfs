@@ -19,7 +19,7 @@ const commands: Record<string, Command> = {
   debian,
   debian1PrepareInstallEnv,
   debian2DiskFormatting,
-  cleanDisk: destroyAllPoolsAndDisks,
+  destroyAllPoolsAndDisks,
   nullCommand: Command.custom(),
   upgradeOsPackages: InstallOsPackage.upgradePackages(),
   vim,
