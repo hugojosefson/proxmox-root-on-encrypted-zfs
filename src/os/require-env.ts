@@ -1,9 +1,16 @@
-export const requireEnv = (name: string): string => {
-  const maybeValue: string | undefined = Deno.env.get(name);
+export const requireEnv = async (name: string): Promise<string> => {
+  const value = Deno.env.get(name);
+  const valueFile = Deno.env.get(name + "_FILE");
 
-  if (!maybeValue) {
-    throw new Error(`Missing env variable "${name}".`);
+  if (typeof value === "string") {
+    return value;
   }
 
-  return maybeValue;
+  if (typeof valueFile === "string") {
+    return await Deno.readTextFile(valueFile);
+  }
+
+  throw new Error(
+    `Missing env variable "${name}", or "${name}_FILE" to read its value from a file.`,
+  );
 };

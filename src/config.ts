@@ -8,6 +8,6 @@ export type Config = {
 
 export const config: Config = {
   VERBOSE: Deno.env.get("VERBOSE") !== "false",
-  DISK: requireEnv("DISK"),
-  DISK_ENCRYPTION_PASSWORD: requireEnv("DISK_ENCRYPTION_PASSWORD"),
+  DISK: await requireEnv("DISK"),
+  DISK_ENCRYPTION_PASSWORD: await requireEnv("DISK_ENCRYPTION_PASSWORD"),
 };
