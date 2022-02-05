@@ -55,7 +55,7 @@ export const zfsBootPool = Command.custom()
           "hole_birth",
           "large_blocks",
           "livelist",
-          "lz4_compress",
+          "zstd_compress",
           "spacemap_histogram",
           "zpool_checkpoint",
         ].map((feature) => `feature@${feature}=enabled`),
@@ -65,7 +65,7 @@ export const zfsBootPool = Command.custom()
       ...[
         "acltype=posixacl",
         "canmount=off",
-        "compression=lz4",
+        "compression=zstd",
         "devices=off",
         "normalization=formD",
         "relatime=on",
