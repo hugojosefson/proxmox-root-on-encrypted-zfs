@@ -13,8 +13,12 @@ export const destroyAllPoolsAndDisks = Command.custom()
     InstallOsPackage.of("mdadm"),
   ])
   .withRun(async () => {
-    console.log("destroyAllPoolsAndDisks: running...");
     await ensureSuccessful(ROOT, ["swapoff", "--all"]);
+    await ensureSuccessful(ROOT, [
+      "sh",
+      "-c",
+      "umount /mnt/* || true; rm -rf /mnt/debootstrap || true; rmdir /mnt/* || true",
+    ]);
     const mdArrays: string[] = (await ensureSuccessfulStdOut(ROOT, [
       "sh",
       "-c",
@@ -44,5 +48,4 @@ export const destroyAllPoolsAndDisks = Command.custom()
 
     await ensureSuccessful(ROOT, ["wipefs", "--all", config.DISK]);
     await ensureSuccessful(ROOT, ["sgdisk", "--zap-all", config.DISK]);
-    console.log("destroyAllPoolsAndDisks: running...DONE.");
   });
