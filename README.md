@@ -15,9 +15,10 @@ See the above guides for [**Caution**](https://openzfs.github.io/openzfs-docs/Ge
 
 Download and boot the recommended Debian ISO. See [Step 1: Prepare The Install Environment](https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/Debian%20Bullseye%20Root%20on%20ZFS.html#step-1-prepare-the-install-environment).
 
-Only do the first item in the list. After opening the terminal, do this instead:
+Only do the first item in the list (open the terminal).
+
+Instead of editing files etc. manually, launch this automated script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/main/install \
-| sudo bash
+curl -fsSL http://dev-server:3000/src/cli.ts | sudo sh -s --
 ```
