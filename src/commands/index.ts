@@ -13,15 +13,17 @@ import {
 } from "./debian-2-disk-formatting.ts";
 import { destroyAllPoolsAndDisks } from "./destroy-all-pools-and-disks.ts";
 import { aptSourcesList } from "./apt-sources-list.ts";
+import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
 
 const commands: Record<string, Command> = {
-  aptSourcesList,
   debian,
   debian1PrepareInstallEnv,
   debian2DiskFormatting,
+  debian3SystemInstallation,
   destroyAllPoolsAndDisks,
   nullCommand: Command.custom(),
   upgradeOsPackages: InstallOsPackage.upgradePackages(),
+  aptSourcesList,
   vim,
   gsettings,
   zfsBootPool,

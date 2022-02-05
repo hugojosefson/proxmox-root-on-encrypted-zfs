@@ -4,13 +4,11 @@ import { config } from "../config.ts";
 import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/target-user.ts";
-import { sleep } from "../os/sleep.ts";
 
 export const zfsPartitions = Command.custom()
   .withLocks([FileSystemPath.of(ROOT, config.DISK)])
   .withDependencies([debian1PrepareInstallEnv])
   .withRun(async () => {
-    console.log("zfsPartitions: running...");
     await ensureSuccessful(ROOT, [
       "sgdisk",
       "--new=2:1M:+512M",
@@ -29,14 +27,12 @@ export const zfsPartitions = Command.custom()
       "--typecode=4:BF00",
       config.DISK,
     ]);
-    console.log("zfsPartitions: running... DONE.");
   });
 
 export const zfsBootPool = Command.custom()
   .withLocks([FileSystemPath.of(ROOT, config.DISK)])
   .withDependencies([zfsPartitions])
   .withRun(async () => {
-    console.log("zfsBootPool: running...");
     await ensureSuccessful(ROOT, [
       "zpool",
       "create",
@@ -78,14 +74,12 @@ export const zfsBootPool = Command.custom()
       "bpool",
       `${config.DISK}3`,
     ]);
-    console.log("zfsBootPool: running... DONE.");
   });
 
 export const zfsRootPool = Command.custom()
   .withLocks([FileSystemPath.of(ROOT, config.DISK)])
   .withDependencies([zfsPartitions])
   .withRun(async () => {
-    console.log("zfsRootPool: running...");
     await ensureSuccessful(ROOT, [
       "zpool",
       "create",
@@ -112,8 +106,10 @@ export const zfsRootPool = Command.custom()
       "/mnt",
       "rpool",
       `${config.DISK}4`,
-    ], { stdin: "mypassword\nmypassword\n" });
-    console.log("zfsRootPool: running... DONE.");
+    ], {
+      stdin:
+        `${config.DISK_ENCRYPTION_PASSWORD}\n${config.DISK_ENCRYPTION_PASSWORD}\n`,
+    });
   });
 
 export const debian2DiskFormatting = Command.custom().withDependencies([
