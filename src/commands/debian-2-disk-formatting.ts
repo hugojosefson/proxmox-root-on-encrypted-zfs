@@ -44,6 +44,7 @@ export const zfsBootPool = Command.custom()
       ...[
         "cachefile=/etc/zfs/zpool.cache",
         "ashift=12",
+        "autotrim=on",
         ...[
           "async_destroy",
           "bookmarks",
@@ -90,18 +91,14 @@ export const zfsRootPool = Command.custom()
       "create",
       ...[
         "ashift=12",
+        "autotrim=on",
       ].flatMap(
         (option) => ["-o", option],
       ),
       ...[
         "encryption=aes-256-gcm",
-
-        // "keyformat=raw",
         "keyformat=passphrase",
-
-        // "keylocation=file:///key",
         "keylocation=prompt",
-
         "acltype=posixacl",
         "canmount=off",
         "compression=zstd",
