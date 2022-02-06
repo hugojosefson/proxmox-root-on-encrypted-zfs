@@ -2,9 +2,9 @@ import { Command } from "../model/command.ts";
 import { config } from "../config.ts";
 import { hostname } from "./hostname.ts";
 import { networkInterface } from "./network-interface.ts";
-import { aptSourcesListMnt } from "./apt-sources-list.ts";
 import { ensureSuccessful } from "../os/exec.ts";
 import { ROOT } from "../os/user/root.ts";
+import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
 
 const cmds = `
 mount --make-private --rbind /dev  /mnt/dev

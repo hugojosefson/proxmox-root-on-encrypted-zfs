@@ -4,7 +4,7 @@ import { ensureSuccessful } from "../os/exec.ts";
 import { aptSourcesList } from "./apt-sources-list.ts";
 import { ROOT } from "../os/user/root.ts";
 
-export const REFRESH_OS_PACKAGES = (new Command())
+export const REFRESH_OS_PACKAGES = Command.custom()
   .withLocks([OS_PACKAGE_SYSTEM])
   .withRun(async (): Promise<RunResult> => {
     await ensureSuccessful(ROOT, [
