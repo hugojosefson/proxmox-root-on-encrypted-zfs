@@ -13,3 +13,13 @@ export const aptSourcesList = new CreateFile(
   ),
   true,
 );
+
+export const aptSourcesListMnt = new CreateFile(
+  ROOT,
+  FileSystemPath.of(ROOT, "/mnt/etc/apt/sources.list"),
+  await readRelativeFile(
+    "./files/etc/apt/sources.list",
+    import.meta.url,
+  ),
+  false,
+).withDependencies([debian3SystemInstallation]);

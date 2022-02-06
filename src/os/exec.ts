@@ -2,7 +2,7 @@ import { config } from "../config.ts";
 import { colorlog, PasswdEntry } from "../deps.ts";
 import { CommandResult } from "../model/command.ts";
 import { FileSystemPath } from "../model/dependency.ts";
-import { DBUS_SESSION_BUS_ADDRESS } from "./user/target-user.ts";
+import { getDbusSessionBusAddress } from "./user/target-user.ts";
 import { ROOT } from "./user/root.ts";
 
 export type ExecOptions = Pick<Deno.RunOptions, "cwd" | "env"> & {
@@ -41,10 +41,10 @@ export const pipeAndCollect = async (
 };
 
 const DEFAULT_ENV = { DEBIAN_FRONTEND: "noninteractive" };
-function runOptions(
+async function runOptions(
   asUser: PasswdEntry,
   opts: ExecOptions,
-): Pick<Deno.RunOptions, "cwd" | "env"> {
+): Promise<Pick<Deno.RunOptions, "cwd" | "env">> {
   return {
     ...(opts.cwd ? { cwd: opts.cwd } : {}),
     ...(asUser === ROOT
@@ -53,7 +53,7 @@ function runOptions(
       }
       : {
         env: {
-          DBUS_SESSION_BUS_ADDRESS,
+          DBUS_SESSION_BUS_ADDRESS: await getDbusSessionBusAddress(),
           ...({ ...DEFAULT_ENV, ...opts.env } || DEFAULT_ENV),
         },
       }),
@@ -88,7 +88,7 @@ export const ensureSuccessful = async (
     stdout: "piped",
     stderr: "piped",
     cmd: effectiveCmd,
-    ...runOptions(asUser, options),
+    ...await runOptions(asUser, options),
   });
 
   if (shouldPipeStdin) {

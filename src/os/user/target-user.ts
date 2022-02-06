@@ -1,6 +1,7 @@
 import { parsePasswd, PasswdEntry } from "../../deps.ts";
 import { ensureSuccessfulStdOut } from "../exec.ts";
 import { ROOT } from "./root.ts";
+import { defer, Deferred } from "../defer.ts";
 
 const byUid = (a: PasswdEntry, b: PasswdEntry) => a?.uid - b?.uid;
 
@@ -33,7 +34,12 @@ const getTargetUser = async (): Promise<PasswdEntry> => {
   );
 };
 
-export const targetUser = await getTargetUser();
+const targetUserDefer: Deferred<PasswdEntry> = defer();
+export const targetUserPromise: Promise<PasswdEntry> = targetUserDefer.promise;
+setTimeout(() => {
+  getTargetUser().then(targetUserDefer.resolve, targetUserDefer.reject);
+}, 500);
 
-export const DBUS_SESSION_BUS_ADDRESS =
-  `unix:path=/run/user/${targetUser.uid}/bus`;
+export async function getDbusSessionBusAddress() {
+  return `unix:path=/run/user/${(await targetUserPromise).uid}/bus`;
+}
