@@ -1,5 +1,5 @@
 import { ensureSuccessfulStdOut } from "./exec.ts";
-import { ROOT } from "./user/target-user.ts";
+import { ROOT } from "./user/root.ts";
 
 export async function findBlockDevicesOfType(
   type: string,

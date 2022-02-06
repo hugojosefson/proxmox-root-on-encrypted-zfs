@@ -2,7 +2,7 @@ import { dirname, PasswdEntry } from "../../deps.ts";
 import { Command, CommandResult, RunResult } from "../../model/command.ts";
 import { FileSystemPath } from "../../model/dependency.ts";
 import { ensureSuccessful, isSuccessful, symlink } from "../../os/exec.ts";
-import { ROOT } from "../../os/user/target-user.ts";
+import { ROOT } from "../../os/user/root.ts";
 
 export abstract class AbstractFileCommand extends Command {
   readonly owner: PasswdEntry;

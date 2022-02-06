@@ -3,7 +3,7 @@ import { ensureSuccessful } from "../os/exec.ts";
 import { config } from "../config.ts";
 import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
 import { FileSystemPath } from "../model/dependency.ts";
-import { ROOT } from "../os/user/target-user.ts";
+import { ROOT } from "../os/user/root.ts";
 
 export const zfsPartitions = Command.custom()
   .withLocks([FileSystemPath.of(ROOT, config.DISK)])

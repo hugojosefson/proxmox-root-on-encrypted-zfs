@@ -1,9 +1,9 @@
 import { CreateFile, LineInFile } from "./common/file-commands.ts";
-import { ROOT } from "../os/user/target-user.ts";
 import { config } from "../config.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
 import { Command } from "../model/command.ts";
+import { ROOT } from "../os/user/root.ts";
 
 export const etcHostname = new CreateFile(
   ROOT,

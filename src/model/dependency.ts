@@ -2,7 +2,7 @@ import { config } from "../config.ts";
 import { memoize, PasswdEntry } from "../deps.ts";
 import { defer, deferAlreadyResolvedVoid, Deferred } from "../os/defer.ts";
 import { resolvePath } from "../os/resolve-path.ts";
-import { ROOT } from "../os/user/target-user.ts";
+import { ROOT } from "../os/user/root.ts";
 
 export type LockReleaser = () => void;
 

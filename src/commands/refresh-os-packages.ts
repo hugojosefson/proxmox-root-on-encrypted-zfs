@@ -2,7 +2,7 @@ import { Command, RunResult } from "../model/command.ts";
 import { OS_PACKAGE_SYSTEM } from "../model/dependency.ts";
 import { ensureSuccessful } from "../os/exec.ts";
 import { aptSourcesList } from "./apt-sources-list.ts";
-import { ROOT } from "../os/user/target-user.ts";
+import { ROOT } from "../os/user/root.ts";
 
 export const REFRESH_OS_PACKAGES = (new Command())
   .withLocks([OS_PACKAGE_SYSTEM])

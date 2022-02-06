@@ -3,7 +3,7 @@ import { config } from "../config.ts";
 import { ensureSuccessful, ensureSuccessfulStdOut } from "../os/exec.ts";
 import { InstallOsPackage } from "./common/os-package.ts";
 import { FileSystemPath } from "../model/dependency.ts";
-import { ROOT } from "../os/user/target-user.ts";
+import { ROOT } from "../os/user/root.ts";
 
 export const destroyAllPoolsAndDisks = Command.custom()
   .withLocks([FileSystemPath.of(ROOT, config.DISK)])

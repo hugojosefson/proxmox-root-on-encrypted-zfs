@@ -1,12 +1,6 @@
 import { parsePasswd, PasswdEntry } from "../../deps.ts";
 import { ensureSuccessfulStdOut } from "../exec.ts";
-
-export const ROOT: PasswdEntry = {
-  uid: 0,
-  gid: 0,
-  username: "root",
-  homedir: "/root",
-};
+import { ROOT } from "./root.ts";
 
 const byUid = (a: PasswdEntry, b: PasswdEntry) => a?.uid - b?.uid;
 

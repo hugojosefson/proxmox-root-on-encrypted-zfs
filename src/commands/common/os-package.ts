@@ -3,8 +3,8 @@ import { Command, RunResult } from "../../model/command.ts";
 import { FLATPAK, OS_PACKAGE_SYSTEM } from "../../model/dependency.ts";
 import { ensureSuccessful, isSuccessful } from "../../os/exec.ts";
 import { isInsideDocker } from "../../os/is-inside-docker.ts";
-import { ROOT } from "../../os/user/target-user.ts";
 import { REFRESH_OS_PACKAGES } from "../refresh-os-packages.ts";
+import { ROOT } from "../../os/user/root.ts";
 
 export type OsPackageName = string;
 export type AurPackageName = string;

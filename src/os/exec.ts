@@ -2,7 +2,8 @@ import { config } from "../config.ts";
 import { colorlog, PasswdEntry } from "../deps.ts";
 import { CommandResult } from "../model/command.ts";
 import { FileSystemPath } from "../model/dependency.ts";
-import { DBUS_SESSION_BUS_ADDRESS, ROOT } from "./user/target-user.ts";
+import { DBUS_SESSION_BUS_ADDRESS } from "./user/target-user.ts";
+import { ROOT } from "./user/root.ts";
 
 export type ExecOptions = Pick<Deno.RunOptions, "cwd" | "env"> & {
   verbose?: boolean;
