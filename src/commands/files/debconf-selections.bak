@@ -1,0 +1,88 @@
+adduser	adduser/homedir-permission	boolean	true
+base-passwd	base-passwd/group-add	boolean	true
+base-passwd	base-passwd/group-change-gid	boolean	true
+base-passwd	base-passwd/group-move	boolean	true
+base-passwd	base-passwd/group-remove	boolean	true
+base-passwd	base-passwd/user-add	boolean	true
+base-passwd	base-passwd/user-change-gecos	boolean	true
+base-passwd	base-passwd/user-change-gid	boolean	true
+base-passwd	base-passwd/user-change-home	boolean	true
+base-passwd	base-passwd/user-change-shell	boolean	true
+base-passwd	base-passwd/user-change-uid	boolean	true
+base-passwd	base-passwd/user-move	boolean	true
+base-passwd	base-passwd/user-remove	boolean	true
+console-setup	console-setup/charmap47	select	UTF-8
+console-setup	console-setup/codeset47	select	# Latin1 and Latin5 - western Europe and Turkic languages
+console-setup	console-setup/codesetcode	string	Lat15
+console-setup	console-setup/fontface47	select	Fixed
+console-setup	console-setup/fontsize-fb47	select	8x16
+console-setup	console-setup/fontsize	string	8x16
+console-setup	console-setup/fontsize-text47	select	8x16
+console-setup	console-setup/store_defaults_in_debconf_db	boolean	true
+dash	dash/sh	boolean	true
+debconf	debconf/frontend	select	Dialog
+debconf	debconf/priority	select	high
+iproute2	iproute2/setcaps	boolean	false
+keyboard-configuration	keyboard-configuration/altgr	select	The default for the keyboard layout
+keyboard-configuration	keyboard-configuration/compose	select	Right Alt (AltGr)
+keyboard-configuration	keyboard-configuration/ctrl_alt_bksp	boolean	false
+keyboard-configuration	keyboard-configuration/layoutcode	string	us
+keyboard-configuration	keyboard-configuration/layout	select	
+keyboard-configuration	keyboard-configuration/modelcode	string	pc105
+keyboard-configuration	keyboard-configuration/model	select	Generic 105-key PC (intl.)
+keyboard-configuration	keyboard-configuration/optionscode	string	compose:ralt
+keyboard-configuration	keyboard-configuration/store_defaults_in_debconf_db	boolean	true
+keyboard-configuration	keyboard-configuration/switch	select	No temporary switch
+keyboard-configuration	keyboard-configuration/toggle	select	No toggling
+keyboard-configuration	keyboard-configuration/unsupported_config_layout	boolean	true
+keyboard-configuration	keyboard-configuration/unsupported_config_options	boolean	true
+keyboard-configuration	keyboard-configuration/unsupported_layout	boolean	true
+keyboard-configuration	keyboard-configuration/unsupported_options	boolean	true
+keyboard-configuration	keyboard-configuration/variantcode	string	
+keyboard-configuration	keyboard-configuration/variant	select	English (US)
+keyboard-configuration	keyboard-configuration/xkb-keymap	select	us
+libc6:amd64	glibc/disable-screensaver	error	
+libc6:amd64	glibc/kernel-not-supported	note	
+libc6:amd64	glibc/kernel-too-old	error	
+libc6:amd64	glibc/restart-failed	error	
+libc6:amd64	glibc/restart-services	string	
+libc6:amd64	glibc/upgrade	boolean	true
+libc6:amd64	libraries/restart-without-asking	boolean	false
+libc6	glibc/disable-screensaver	error	
+libc6	glibc/kernel-not-supported	note	
+libc6	glibc/kernel-too-old	error	
+libc6	glibc/restart-failed	error	
+libc6	glibc/restart-services	string	
+libc6	glibc/upgrade	boolean	true
+libc6	libraries/restart-without-asking	boolean	false
+libpam0g:amd64	libpam0g/restart-failed	error	
+libpam0g:amd64	libpam0g/restart-services	string	
+libpam0g:amd64	libpam0g/xdm-needs-restart	error	
+libpam0g:amd64	libraries/restart-without-asking	boolean	false
+libpam-modules	libpam-modules/deprecate-tally	error	
+libpam-modules	libpam-modules/disable-screensaver	error	
+libpam-modules	libpam-modules/profiles-disabled	error	
+libpam-runtime	libpam-runtime/conflicts	error	
+libpam-runtime	libpam-runtime/no_profiles_chosen	error	
+libpam-runtime	libpam-runtime/override	boolean	false
+libpam-runtime	libpam-runtime/profiles	multiselect	unix
+libssl1.1:amd64	libssl1.1/restart-failed	error	
+libssl1.1:amd64	libssl1.1/restart-services	string	
+locales	locales/default_environment_locale	select	en_US.UTF-8
+locales	locales/locales_to_be_generated	multiselect	en_US.UTF-8 UTF-8
+tasksel	tasksel/desktop	multiselect	
+tasksel	tasksel/first	multiselect	
+tasksel	tasksel/tasks	multiselect	
+tzdata	tzdata/Areas	select	Europe
+tzdata	tzdata/Zones/Africa	select	
+tzdata	tzdata/Zones/America	select	
+tzdata	tzdata/Zones/Antarctica	select	
+tzdata	tzdata/Zones/Arctic	select	
+tzdata	tzdata/Zones/Asia	select	
+tzdata	tzdata/Zones/Atlantic	select	
+tzdata	tzdata/Zones/Australia	select	
+tzdata	tzdata/Zones/Etc	select	UTC
+tzdata	tzdata/Zones/Europe	select	Stockholm
+tzdata	tzdata/Zones/Indian	select	
+tzdata	tzdata/Zones/Pacific	select	
+tzdata	tzdata/Zones/US	select	
