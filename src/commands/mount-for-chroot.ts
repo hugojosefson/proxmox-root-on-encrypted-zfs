@@ -22,4 +22,5 @@ export const mountForChroot = Command.custom()
     await ensureSuccessful(ROOT, ["sh", "-c", cmds]);
   });
 
-const inChrootDo = `chroot /mnt /usr/bin/env DISK=${config.DISK} bash -c`;
+const inChrootDo = `chroot /mnt /usr/bin/env DISK=${await config
+  .DISK()} bash -c`;

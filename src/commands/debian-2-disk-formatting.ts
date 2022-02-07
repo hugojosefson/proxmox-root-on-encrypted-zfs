@@ -6,33 +6,36 @@ import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/root.ts";
 
 export const zfsPartitions = Command.custom()
-  .withLocks([FileSystemPath.of(ROOT, config.DISK)])
+  .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
   .withDependencies([debian1PrepareInstallEnv])
   .withRun(async () => {
+    await ensureSuccessful(ROOT, ["sync"]);
     await ensureSuccessful(ROOT, [
       "sgdisk",
       "--new=2:1M:+512M",
       "--typecode=2:EF00",
-      config.DISK,
+      await config.DISK(),
     ]);
     await ensureSuccessful(ROOT, [
       "sgdisk",
       "--new=3:0:+1G",
       "--typecode=3:BF01",
-      config.DISK,
+      await config.DISK(),
     ]);
     await ensureSuccessful(ROOT, [
       "sgdisk",
       "--new=4:0:0",
       "--typecode=4:BF00",
-      config.DISK,
+      await config.DISK(),
     ]);
   });
 
 export const zfsBootPool = Command.custom()
-  .withLocks([FileSystemPath.of(ROOT, config.DISK)])
+  .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
   .withDependencies([zfsPartitions])
   .withRun(async () => {
+    // await ensureSuccessful(ROOT, ["sync",]);
+    // await ensureSuccessful(ROOT, ["sleep","5"]);
     await ensureSuccessful(ROOT, [
       "zpool",
       "create",
@@ -69,17 +72,20 @@ export const zfsBootPool = Command.custom()
         "xattr=sa",
         "mountpoint=/boot",
       ].flatMap((systemOption) => ["-O", systemOption]),
+      "-f",
       "-R",
       "/mnt",
       "bpool",
-      `${config.DISK}3`,
+      `${await config.DISK()}-part3`,
     ]);
   });
 
 export const zfsRootPool = Command.custom()
-  .withLocks([FileSystemPath.of(ROOT, config.DISK)])
+  .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
   .withDependencies([zfsPartitions])
   .withRun(async () => {
+    // await ensureSuccessful(ROOT, ["sync",]);
+    // await ensureSuccessful(ROOT, ["sleep","5"]);
     await ensureSuccessful(ROOT, [
       "zpool",
       "create",
@@ -102,10 +108,11 @@ export const zfsRootPool = Command.custom()
         "xattr=sa",
         "mountpoint=/",
       ].flatMap((systemOption) => ["-O", systemOption]),
+      "-f",
       "-R",
       "/mnt",
       "rpool",
-      `${config.DISK}4`,
+      `${await config.DISK()}-part4`,
     ], {
       stdin:
         `${config.DISK_ENCRYPTION_PASSWORD}\n${config.DISK_ENCRYPTION_PASSWORD}\n`,

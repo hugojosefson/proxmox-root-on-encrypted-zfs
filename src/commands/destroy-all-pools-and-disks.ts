@@ -4,11 +4,12 @@ import { ensureSuccessful, ensureSuccessfulStdOut } from "../os/exec.ts";
 import { InstallOsPackage } from "./common/os-package.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/root.ts";
+import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
 
 export const destroyAllPoolsAndDisks = Command.custom()
-  .withLocks([FileSystemPath.of(ROOT, config.DISK)])
+  .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
   .withDependencies([
-    InstallOsPackage.of("zfsutils-linux"),
+    debian1PrepareInstallEnv,
     InstallOsPackage.of("gdisk"),
     InstallOsPackage.of("mdadm"),
   ])
@@ -34,7 +35,7 @@ export const destroyAllPoolsAndDisks = Command.custom()
         "mdadm",
         "--zero-superblock",
         "--force",
-        config.DISK,
+        await config.DISK(),
       ]);
     }
     const pools =
@@ -46,6 +47,6 @@ export const destroyAllPoolsAndDisks = Command.custom()
       ),
     );
 
-    await ensureSuccessful(ROOT, ["wipefs", "--all", config.DISK]);
-    await ensureSuccessful(ROOT, ["sgdisk", "--zap-all", config.DISK]);
+    await ensureSuccessful(ROOT, ["wipefs", "--all", await config.DISK()]);
+    await ensureSuccessful(ROOT, ["sgdisk", "--zap-all", await config.DISK()]);
   });

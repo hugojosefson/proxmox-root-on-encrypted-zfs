@@ -22,7 +22,8 @@ export const etcHosts = new LineInFile(
   ROOT,
   FileSystemPath.of(ROOT, "/mnt/etc/hosts"),
   `127.0.1.1       ${getHostnames()}`,
-);
+)
+  .withDependencies([debian3SystemInstallation]);
 
 export const hostname = Command.custom().withDependencies([
   etcHostname,

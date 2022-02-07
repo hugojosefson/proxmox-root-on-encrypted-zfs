@@ -4,7 +4,7 @@ import { ROOT } from "./user/root.ts";
 
 export async function findDisk(): Promise<string> {
   function findIdsCmd(targetDevice: string) {
-    const targetDeviceRegex = targetDevice.replace("/", "\\/");
+    const targetDeviceRegex = targetDevice.replaceAll("/", "\\/");
     return `find /dev/disk/by-id/ -type l -exec echo -ne "{}\\t" \\; -exec readlink -f {} \\; | awk -F $'\\t' '/\\t${targetDeviceRegex}$/{print $1}'`;
   }
 
@@ -16,6 +16,12 @@ export async function findDisk(): Promise<string> {
       .map(async (outputPromise) =>
         (await outputPromise).split("\n").filter((line) => line.length > 0)
       )
+      .map(async (linesPromise: Promise<string[]>) =>
+        (await linesPromise).map((line: string) => line.split("\t"))
+      )
+      .map(async (tuplesPromise) =>
+        (await tuplesPromise).map((tuple) => tuple[0])
+      )
       .map(async (idLinks) => longestString(await idLinks)),
   );
   if (disksById.length > 1) {
@@ -25,7 +31,7 @@ export async function findDisk(): Promise<string> {
   }
   if (disksById.length < 1) {
     throw new Error(
-      `Could not find the disk to install to. Please specify it with environment DISK=/dev/disk/by-id/...`,
+      `Could not find one single disk. Please specify it with environment DISK=/dev/disk/by-id/...`,
     );
   }
   return disksById[0];

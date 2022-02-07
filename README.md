@@ -17,7 +17,13 @@ Download and boot the recommended Debian ISO. See [Step 1: Prepare The Install E
 
 Only do the first item in the list (open the terminal).
 
-Instead of editing files etc. manually, launch this automated script:
+> **Tip!**
+>
+> The `debian-live-11.*-amd64-standard.iso` boots faster, and drops you immediately into a terminal! Download it from the same place as other ISO:
+>
+> [https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/](https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/)
+
+Instead of editing files etc. manually, launch this automated script from the terminal:
 
 ```bash
 curl -fsSL http://dev-server:3000/src/cli.ts | sudo sh -s --

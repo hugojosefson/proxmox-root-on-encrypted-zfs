@@ -15,6 +15,7 @@ import { destroyAllPoolsAndDisks } from "./destroy-all-pools-and-disks.ts";
 import { aptSourcesList } from "./apt-sources-list.ts";
 import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
 import { debian4SystemConfiguration } from "./debian-4-system-configuration.ts";
+import { REFRESH_OS_PACKAGES } from "./refresh-os-packages.ts";
 
 const commands: Record<string, Command> = {
   debian,
@@ -25,6 +26,7 @@ const commands: Record<string, Command> = {
   destroyAllPoolsAndDisks,
   nullCommand: Command.custom(),
   upgradeOsPackages: InstallOsPackage.upgradePackages(),
+  REFRESH_OS_PACKAGES,
   aptSourcesList,
   vim,
   gsettings,
