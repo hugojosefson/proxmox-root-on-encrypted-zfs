@@ -28,3 +28,9 @@ Instead of editing files etc. manually, launch this automated script from the te
 ```bash
 curl -fsSL http://dev-server:3000/src/cli.ts | sudo sh -s --
 ```
+
+```bash
+curl -fsSL http://dev-server:3000/src/cli.ts \
+| sudo DISK_ENCRYPTION_PASSWORD=asdasdasd ROOT_PASSWORD=rootpass HOSTNAME=proxymix \
+       sh -s -- destroy-all-pools-and-disks debian
+```
