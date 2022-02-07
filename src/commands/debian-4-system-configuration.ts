@@ -10,6 +10,7 @@ import { chrootZfs } from "./chroot-zfs.ts";
 import { chrootGrub } from "./chroot-grub.ts";
 import { chrootPasswdRoot } from "./chroot-passwd-root.ts";
 import { chrootZfsBpool } from "./chroot-zfs-bpool.ts";
+import { chrootTmpfs } from "./chroot-tmpfs.ts";
 
 export const debian4SystemConfiguration = Command.custom()
   .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
@@ -22,4 +23,5 @@ export const debian4SystemConfiguration = Command.custom()
     chrootGrub,
     chrootPasswdRoot,
     chrootZfsBpool,
+    chrootTmpfs,
   ]);

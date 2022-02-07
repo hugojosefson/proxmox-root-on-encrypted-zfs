@@ -18,7 +18,14 @@ export const destroyAllPoolsAndDisks = Command.custom()
     await ensureSuccessful(ROOT, [
       "sh",
       "-c",
-      "umount /mnt/* || true; rm -rf /mnt/debootstrap || true; rmdir /mnt/* || true",
+      `
+mount | grep -v zfs | tac | awk '/\\/mnt/ {print $3}' | xargs -i{} umount -lf {}
+zpool export -a
+
+umount /mnt/* || true
+rm -rf /mnt/debootstrap || true
+rmdir /mnt/* || true
+`,
     ]);
     const mdArrays: string[] = (await ensureSuccessfulStdOut(ROOT, [
       "sh",

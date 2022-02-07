@@ -40,9 +40,6 @@ mkdir /mnt/run
 mount -t tmpfs tmpfs /mnt/run
 mkdir /mnt/run/lock
 
-zfs create -o com.sun:auto-snapshot=false  rpool/tmp
-chmod 1777 /mnt/tmp
-
 debootstrap bullseye /mnt
 
 mkdir /mnt/etc/zfs

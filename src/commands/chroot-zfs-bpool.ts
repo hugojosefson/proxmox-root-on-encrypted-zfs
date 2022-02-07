@@ -1,7 +1,8 @@
-import { chrootMount, inChrootCommand } from "./chroot-mount.ts";
+import { inChrootCommand } from "./chroot-mount.ts";
 import { CreateFile } from "./common/file-commands.ts";
 import { ROOT } from "../os/user/root.ts";
 import { FileSystemPath } from "../model/dependency.ts";
+import { chrootBasicSystemEnvironment } from "./chroot-basic-system-environment.ts";
 
 const zfsImportBpoolService = new CreateFile(
   ROOT,
@@ -21,7 +22,7 @@ ExecStartPost=-/bin/mv /etc/zfs/preboot_zpool.cache /etc/zfs/zpool.cache
 
 [Install]
 WantedBy=zfs-import.target`,
-).withDependencies([chrootMount]);
+).withDependencies([chrootBasicSystemEnvironment]);
 
 export const chrootZfsBpool = inChrootCommand(
   "systemctl enable zfs-import-bpool.service",
