@@ -1,17 +1,15 @@
 import { Command } from "../model/command.ts";
-import { config } from "../config.ts";
 import { hostname } from "./hostname.ts";
 import { networkInterface } from "./network-interface.ts";
-import { ensureSuccessful } from "../os/exec.ts";
+import { ensureSuccessful, ExecOptions } from "../os/exec.ts";
 import { ROOT } from "../os/user/root.ts";
 import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
 
-async function inChrootPrefix(cmds: string): Promise<string[]> {
+function inChrootPrefix(cmds: string): string[] {
   return [
     `chroot`,
     `/mnt`,
     `/usr/bin/env`,
-    `DISK=${await config.DISK()}`,
     `bash`,
     `--login`,
     `-c`,
@@ -35,10 +33,10 @@ export const chrootMount = Command.custom()
     await ensureSuccessful(ROOT, ["sh", "-c", chrootMountCmds]);
   });
 
-export function inChrootCommand(cmds: string): Command {
+export function inChrootCommand(cmds: string, options?: ExecOptions): Command {
   return Command.custom()
     .withDependencies([chrootMount])
     .withRun(async () => {
-      await ensureSuccessful(ROOT, await inChrootPrefix(cmds));
+      await ensureSuccessful(ROOT, inChrootPrefix(cmds), options);
     });
 }

@@ -16,6 +16,11 @@ import { aptSourcesList } from "./apt-sources-list.ts";
 import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
 import { debian4SystemConfiguration } from "./debian-4-system-configuration.ts";
 import { REFRESH_OS_PACKAGES } from "./refresh-os-packages.ts";
+import { chrootBasicSystemEnvironment } from "./chroot-basic-system-environment.ts";
+import { chrootZfs } from "./chroot-zfs.ts";
+import { chrootGrub } from "./chroot-grub.ts";
+import { chrootPasswdRoot } from "./chroot-passwd-root.ts";
+import { chrootZfsBpool } from "./chroot-zfs-bpool.ts";
 
 const commands: Record<string, Command> = {
   debian,
@@ -32,6 +37,11 @@ const commands: Record<string, Command> = {
   gsettings,
   zfsBootPool,
   zfsRootPool,
+  chrootBasicSystemEnvironment,
+  chrootZfs,
+  chrootGrub,
+  chrootPasswdRoot,
+  chrootZfsBpool,
 };
 
 const kebabCommands: Record<string, Command> = Object.entries(commands)

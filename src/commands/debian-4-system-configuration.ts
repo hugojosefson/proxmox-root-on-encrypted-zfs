@@ -7,6 +7,9 @@ import { ROOT } from "../os/user/root.ts";
 import { config } from "../config.ts";
 import { chrootBasicSystemEnvironment } from "./chroot-basic-system-environment.ts";
 import { chrootZfs } from "./chroot-zfs.ts";
+import { chrootGrub } from "./chroot-grub.ts";
+import { chrootPasswdRoot } from "./chroot-passwd-root.ts";
+import { chrootZfsBpool } from "./chroot-zfs-bpool.ts";
 
 export const debian4SystemConfiguration = Command.custom()
   .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
@@ -16,4 +19,7 @@ export const debian4SystemConfiguration = Command.custom()
     aptSourcesListMnt,
     chrootBasicSystemEnvironment,
     chrootZfs,
+    chrootGrub,
+    chrootPasswdRoot,
+    chrootZfsBpool,
   ]);
