@@ -22,6 +22,8 @@ Only do the first item in the list (open the terminal).
 > The `debian-live-11.*-amd64-standard.iso` boots faster, and drops you immediately into a terminal! Download it from the same place as other ISO:
 >
 > [https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/](https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/)
+>
+> Log in as `user`, with password `live`.
 
 Instead of editing files etc. manually, launch this automated script from the terminal:
 
@@ -29,8 +31,37 @@ Instead of editing files etc. manually, launch this automated script from the te
 curl -fsSL http://dev-server:3000/src/cli.ts | sudo sh -s --
 ```
 
+### More detailed full examples
+
+Destroy and delete all pools and disks + reboot:
+
 ```bash
 curl -fsSL http://dev-server:3000/src/cli.ts \
-| sudo DISK_ENCRYPTION_PASSWORD=asdasdasd ROOT_PASSWORD=rootpass HOSTNAME=proxymix \
-       sh -s -- destroy-all-pools-and-disks debian
+| sudo DISK_ENCRYPTION_PASSWORD=asdasdasd \
+       ROOT_PASSWORD=rootpass \
+       HOSTNAME=proxymix \
+       ROOT_AUTHORIZED_KEYS_URL=https://github.com/hugojosefson.keys \
+       sh -s -- destroy-all-pools-and-disks
+
+sudo reboot
+
+```
+
+Install Debian:
+
+```bash
+curl -fsSL http://dev-server:3000/src/cli.ts \
+| sudo DISK_ENCRYPTION_PASSWORD=asdasdasd \
+       ROOT_PASSWORD=rootpass \
+       HOSTNAME=proxymix \
+       ROOT_AUTHORIZED_KEYS_URL=https://github.com/hugojosefson.keys \
+       sh -s -- debian
+
+```
+
+If you want to inspect the chroot:
+
+```bash
+sudo chroot /mnt /usr/bin/env bash --login
+
 ```

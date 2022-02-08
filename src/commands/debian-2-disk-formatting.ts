@@ -28,6 +28,7 @@ export const zfsPartitions = Command.custom()
       "--typecode=4:BF00",
       await config.DISK(),
     ]);
+    await ensureSuccessful(ROOT, ["sync"]);
   });
 
 export const zfsBootPool = Command.custom()

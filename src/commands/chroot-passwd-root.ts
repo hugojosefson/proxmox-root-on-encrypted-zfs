@@ -1,5 +1,4 @@
-import { inChrootCommand } from "./chroot-mount.ts";
-import { chrootBasicSystemEnvironment } from "./chroot-basic-system-environment.ts";
+import { inChrootCommand } from "./chroot-basic-system-environment.ts";
 import { config } from "../config.ts";
 
 export const chrootPasswdRoot = inChrootCommand(
@@ -7,5 +6,4 @@ export const chrootPasswdRoot = inChrootCommand(
   {
     stdin: `${config.ROOT_PASSWORD}\n${config.ROOT_PASSWORD}\n`,
   },
-)
-  .withDependencies([chrootBasicSystemEnvironment]);
+);

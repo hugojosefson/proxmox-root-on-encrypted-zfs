@@ -1,5 +1,4 @@
-import { inChrootCommand } from "./chroot-mount.ts";
-import { chrootBasicSystemEnvironment } from "./chroot-basic-system-environment.ts";
+import { inChrootCommand } from "./chroot-basic-system-environment.ts";
 import { config } from "../config.ts";
 
 export const chrootGrub = inChrootCommand(`
@@ -13,5 +12,4 @@ mount /boot/efi
 
 apt-get install -y grub-efi-amd64 shim-signed
 apt-get purge -y os-prober
-`)
-  .withDependencies([chrootBasicSystemEnvironment]);
+`);

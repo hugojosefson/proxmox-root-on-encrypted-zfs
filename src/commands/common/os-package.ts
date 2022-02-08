@@ -30,7 +30,7 @@ export class InstallOsPackage extends AbstractPackageCommand<OsPackageName> {
     super(packageName);
     this.locks.push(OS_PACKAGE_SYSTEM);
     this.dependencies.push(
-      InstallOsPackage.upgradePackages(),
+      REFRESH_OS_PACKAGES,
     );
   }
 

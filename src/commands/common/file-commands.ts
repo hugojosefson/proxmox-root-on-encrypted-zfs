@@ -182,6 +182,7 @@ export class CreateDir extends Command {
 }
 
 export const MODE_EXECUTABLE_775 = 0o755;
+export const MODE_SECRET_600 = 0o600;
 
 const ensureLineInFile = (
   line: string,

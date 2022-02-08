@@ -7,6 +7,7 @@ export type Config = {
   DISK: typeof getDisk;
   DISK_ENCRYPTION_PASSWORD: string;
   ROOT_PASSWORD: string;
+  ROOT_AUTHORIZED_KEYS: string;
   HOSTNAME: string;
   FQDN?: string;
 };
@@ -20,6 +21,7 @@ export const config: Config = {
   DISK: memoize(getDisk),
   DISK_ENCRYPTION_PASSWORD: await requireEnv("DISK_ENCRYPTION_PASSWORD"),
   ROOT_PASSWORD: await requireEnv("ROOT_PASSWORD"),
+  ROOT_AUTHORIZED_KEYS: await requireEnv("ROOT_AUTHORIZED_KEYS"),
   HOSTNAME: await requireEnv("HOSTNAME"),
   FQDN: Deno.env.get("FQDN"),
 };
