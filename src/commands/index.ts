@@ -22,6 +22,7 @@ import { chrootGrub } from "./chroot-grub.ts";
 import { chrootPasswdRoot } from "./chroot-passwd-root.ts";
 import { chrootZfsBpool } from "./chroot-zfs-bpool.ts";
 import { chrootTmpfs } from "./chroot-tmpfs.ts";
+import { chrootSsh } from "./chroot-ssh.ts";
 
 const commands: Record<string, Command> = {
   debian,
@@ -44,6 +45,7 @@ const commands: Record<string, Command> = {
   chrootPasswdRoot,
   chrootZfsBpool,
   chrootTmpfs,
+  chrootSsh,
 };
 
 const kebabCommands: Record<string, Command> = Object.entries(commands)
