@@ -10,17 +10,23 @@ const chrootInstallDropbear = inChrootCommand(
 
 const chrootWriteDropbearAuthorizedKeys = new CreateFile(
   ROOT,
-  FileSystemPath.of(ROOT, "/mnt/etc/dropbear/authorized_keys"),
+  FileSystemPath.of(ROOT, "/mnt/etc/dropbear-initramfs/authorized_keys"),
   config.ROOT_AUTHORIZED_KEYS,
   true,
   MODE_SECRET_600,
 ).withDependencies([chrootInstallDropbear]);
 
-const chrootWriteDropbearNetworkConfig = inChrootCommand("true");
+const chrootCleanupDropbearAuthorizedKeys = inChrootCommand(
+  "sed -i '/ssh-ed25519/d' /etc/dropbear-initramfs/authorized_keys",
+)
+  .withDependencies([chrootWriteDropbearAuthorizedKeys]);
+
+const chrootWriteDropbearNetworkConfig = inChrootCommand("echo TODO");
 const chrootUpdateInitramfs = inChrootCommand("update-initramfs -u -k all");
 
 export const chrootDropbearRemoteUnlocking = chrootUpdateInitramfs
   .withDependencies([
     chrootWriteDropbearAuthorizedKeys,
     chrootWriteDropbearNetworkConfig,
+    chrootCleanupDropbearAuthorizedKeys,
   ]);
