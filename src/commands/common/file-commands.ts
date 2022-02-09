@@ -28,23 +28,23 @@ export abstract class AbstractFileCommand extends Command {
   abstract run(): Promise<RunResult>;
 }
 
-const existsDir = async (dirSegments: Array<string>): Promise<boolean> => {
+export async function existsDir(dirSegments: Array<string>): Promise<boolean> {
   try {
     const dirInfo: Deno.FileInfo = await Deno.stat(asPath(dirSegments));
     return dirInfo.isDirectory;
   } catch {
     return false;
   }
-};
+}
 
-const existsPath = async (dirSegments: Array<string>): Promise<boolean> => {
+export async function existsPath(dirSegments: Array<string>): Promise<boolean> {
   try {
     await Deno.stat(asPath(dirSegments));
     return true;
   } catch {
     return false;
   }
-};
+}
 
 const asPath = (pathSegments: Array<string>): string =>
   "/" + pathSegments.join("/");
@@ -55,10 +55,10 @@ const getParentDirSegments = (dirSegments: Array<string>) =>
 const asPathSegments = (path: FileSystemPath): Array<string> =>
   path.path.split("/");
 
-const mkdirp = async (
+async function mkdirp(
   owner: PasswdEntry,
   dirSegments: Array<string>,
-): Promise<void> => {
+): Promise<void> {
   if (await existsDir(dirSegments)) {
     await Deno.chown(asPath(dirSegments), owner.uid, owner.gid);
     return;
@@ -75,12 +75,12 @@ const mkdirp = async (
         : Promise.reject(reason),
   );
   await Deno.chown(asPath(dirSegments), owner.uid, owner.gid);
-};
+}
 
-const backupFileUnlessContentAlready = async (
+async function backupFileUnlessContentAlready(
   filePath: FileSystemPath,
   contents: string,
-): Promise<FileSystemPath | undefined> => {
+): Promise<FileSystemPath | undefined> {
   if (!await existsPath(asPathSegments(filePath))) {
     return undefined;
   }
@@ -94,18 +94,18 @@ const backupFileUnlessContentAlready = async (
   );
   await Deno.rename(filePath.path, backupFilePath.path);
   return backupFilePath;
-};
+}
 
 /**
  * Creates a file. If it creates a backup of any existing file, its Promise resolves to that path. Otherwise to undefined.
  */
-const createFile = async (
+async function createFile(
   owner: PasswdEntry,
   path: FileSystemPath,
   contents: string,
   shouldBackupAnyExistingFile = false,
   mode?: number,
-): Promise<FileSystemPath | undefined> => {
+): Promise<FileSystemPath | undefined> {
   await mkdirp(owner, dirname(path.path).split("/"));
 
   const data: Uint8Array = new TextEncoder().encode(contents);
@@ -118,7 +118,7 @@ const createFile = async (
   await Deno.writeFile(path.path, data, options);
   await Deno.chown(path.path, owner.uid, owner.gid);
   return backupFilePath;
-};
+}
 
 export class CreateFile extends AbstractFileCommand {
   readonly contents: string;
@@ -153,12 +153,9 @@ export class CreateFile extends AbstractFileCommand {
   }
 }
 
-const createDir = async (
-  owner: PasswdEntry,
-  path: FileSystemPath,
-) => {
+async function createDir(owner: PasswdEntry, path: FileSystemPath) {
   await mkdirp(owner, path.path.split("/"));
-};
+}
 
 export class CreateDir extends Command {
   readonly owner: PasswdEntry;

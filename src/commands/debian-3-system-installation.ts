@@ -4,6 +4,7 @@ import { debian2DiskFormatting } from "./debian-2-disk-formatting.ts";
 import { ROOT } from "../os/user/root.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { config } from "../config.ts";
+import { existsPath } from "./common/file-commands.ts";
 
 const cmds = `
 
@@ -50,6 +51,7 @@ cp /etc/zfs/zpool.cache /mnt/etc/zfs/
 export const debian3SystemInstallation = Command.custom()
   .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
   .withDependencies([debian2DiskFormatting])
+  .withSkipIfAll([() => existsPath("/mnt/etc/zfs/zpool.cache".split("/"))])
   .withRun(async () => {
     await ensureSuccessful(ROOT, ["sh", "-c", cmds]);
   });

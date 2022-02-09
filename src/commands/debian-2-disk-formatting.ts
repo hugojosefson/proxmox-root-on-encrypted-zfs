@@ -4,10 +4,14 @@ import { config } from "../config.ts";
 import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/root.ts";
+import { existsPath } from "./common/file-commands.ts";
 
-export const zfsPartitions = Command.custom()
+export const zfsPartition2Efi = Command.custom()
   .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
   .withDependencies([debian1PrepareInstallEnv])
+  .withSkipIfAll([
+    async () => await existsPath(`${await config.DISK()}-part2`.split("/")),
+  ])
   .withRun(async () => {
     await ensureSuccessful(ROOT, ["sync"]);
     await ensureSuccessful(ROOT, [
@@ -16,12 +20,36 @@ export const zfsPartitions = Command.custom()
       "--typecode=2:EF00",
       await config.DISK(),
     ]);
+    await ensureSuccessful(ROOT, ["sync"]);
+    await ensureSuccessful(ROOT, ["sleep", "5"]);
+  });
+
+export const zfsPartition3Boot = Command.custom()
+  .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
+  .withDependencies([debian1PrepareInstallEnv])
+  .withSkipIfAll([
+    async () => await existsPath(`${await config.DISK()}-part3`.split("/")),
+  ])
+  .withRun(async () => {
+    await ensureSuccessful(ROOT, ["sync"]);
     await ensureSuccessful(ROOT, [
       "sgdisk",
       "--new=3:0:+1G",
       "--typecode=3:BF01",
       await config.DISK(),
     ]);
+    await ensureSuccessful(ROOT, ["sync"]);
+    await ensureSuccessful(ROOT, ["sleep", "5"]);
+  });
+
+export const zfsPartition4Root = Command.custom()
+  .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
+  .withDependencies([debian1PrepareInstallEnv])
+  .withSkipIfAll([
+    async () => await existsPath(`${await config.DISK()}-part4`.split("/")),
+  ])
+  .withRun(async () => {
+    await ensureSuccessful(ROOT, ["sync"]);
     await ensureSuccessful(ROOT, [
       "sgdisk",
       "--new=4:0:0",
@@ -29,14 +57,17 @@ export const zfsPartitions = Command.custom()
       await config.DISK(),
     ]);
     await ensureSuccessful(ROOT, ["sync"]);
+    await ensureSuccessful(ROOT, ["sleep", "5"]);
   });
 
 export const zfsBootPool = Command.custom()
   .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
-  .withDependencies([zfsPartitions])
+  .withDependencies([zfsPartition3Boot])
+  .withSkipIfAll([
+    () =>
+      ensureSuccessful(ROOT, `zpool list bpool`.split(" ")).then(() => true),
+  ])
   .withRun(async () => {
-    // await ensureSuccessful(ROOT, ["sync",]);
-    // await ensureSuccessful(ROOT, ["sleep","5"]);
     await ensureSuccessful(ROOT, [
       "zpool",
       "create",
@@ -83,10 +114,12 @@ export const zfsBootPool = Command.custom()
 
 export const zfsRootPool = Command.custom()
   .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
-  .withDependencies([zfsPartitions])
+  .withDependencies([zfsPartition4Root])
+  .withSkipIfAll([
+    () =>
+      ensureSuccessful(ROOT, `zpool list rpool`.split(" ")).then(() => true),
+  ])
   .withRun(async () => {
-    // await ensureSuccessful(ROOT, ["sync",]);
-    // await ensureSuccessful(ROOT, ["sleep","5"]);
     await ensureSuccessful(ROOT, [
       "zpool",
       "create",
@@ -120,7 +153,12 @@ export const zfsRootPool = Command.custom()
     });
   });
 
+export const zfsPartitions = Command.custom()
+  .withDependencies([zfsPartition2Efi, zfsPartition3Boot, zfsPartition4Root]);
+
 export const debian2DiskFormatting = Command.custom().withDependencies([
+  debian1PrepareInstallEnv,
+  zfsPartitions,
   zfsBootPool,
   zfsRootPool,
 ]);

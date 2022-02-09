@@ -13,6 +13,7 @@ export interface CommandResult {
 export class Command {
   readonly dependencies: Array<Command> = new Array(0);
   readonly locks: Array<Lock> = new Array(0);
+  readonly skipIfAll: Array<Predicate> = new Array(0);
   readonly doneDeferred: Deferred<CommandResult> = defer();
   readonly done: Promise<CommandResult> = this.doneDeferred.promise;
 
@@ -20,7 +21,33 @@ export class Command {
     return this.constructor.name;
   }
 
+  private async maybeMarkAsAlreadyDone(): Promise<void> {
+    if (this.skipIfAll.length) {
+      try {
+        await Promise.all(
+          this.skipIfAll.map(async (predicate) => {
+            if (await predicate()) {
+              return;
+            }
+            throw new Error(
+              `Let's stop wasting time on any more predicates. We have already decided to go ahead and run this command.`,
+            );
+          }),
+        );
+        this.doneDeferred.resolve({
+          status: { success: true, code: 0 },
+          stdout: "already_done",
+          stderr: "",
+        });
+      } catch (_ignore) {
+        // Some predicate failed, so we should run the command.
+      }
+    }
+  }
+
   async runWhenDependenciesAreDone(): Promise<CommandResult> {
+    await this.maybeMarkAsAlreadyDone();
+
     config.VERBOSE && console.error(`Running command `, this);
     if (this.doneDeferred.isDone) {
       return this.done;
@@ -114,7 +141,13 @@ export class Command {
     this.run = run;
     return this;
   }
+
+  withSkipIfAll(predicates: Array<Predicate>): Command {
+    this.skipIfAll.push(...predicates);
+    return this;
+  }
 }
 
+export type Predicate = () => boolean | Promise<boolean>;
 export type RunResult = CommandResult | void | string | Command[];
 export type RunFunction = () => Promise<RunResult>;

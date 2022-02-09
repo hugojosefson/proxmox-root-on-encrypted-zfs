@@ -32,13 +32,12 @@ export class InstallOsPackage extends AbstractPackageCommand<OsPackageName> {
     this.dependencies.push(
       REFRESH_OS_PACKAGES,
     );
+    this.skipIfAll.push(async () =>
+      await isInstalledOsPackage(this.packageName)
+    );
   }
 
   async run(): Promise<RunResult> {
-    if (await isInstalledOsPackage(this.packageName)) {
-      return `Already installed OS package ${this.packageName}.`;
-    }
-
     await ensureSuccessful(ROOT, [
       "apt-get",
       "install",
@@ -71,13 +70,12 @@ export class RemoveOsPackage extends AbstractPackageCommand<OsPackageName> {
     super(packageName);
     this.locks.push(OS_PACKAGE_SYSTEM);
     this.dependencies.push(REFRESH_OS_PACKAGES);
+    this.skipIfAll.push(async () =>
+      !await isInstalledOsPackage(this.packageName)
+    );
   }
 
   async run(): Promise<RunResult> {
-    if (!await isInstalledOsPackage(this.packageName)) {
-      return `Already removed OS package ${this.packageName}.`;
-    }
-
     await ensureSuccessful(ROOT, [
       "apt-get",
       "purge",
@@ -108,6 +106,13 @@ export class ReplaceOsPackage extends Command {
 
     this.removePackageName = removePackageName;
     this.installPackageName = installPackageName;
+
+    this.skipIfAll.push(async () =>
+      !await isInstalledOsPackage(this.removePackageName)
+    );
+    this.skipIfAll.push(async () =>
+      await isInstalledOsPackage(this.installPackageName)
+    );
   }
 
   async run(): Promise<RunResult> {
@@ -148,13 +153,12 @@ export class InstallFlatpakPackage
     super(packageName);
     this.locks.push(FLATPAK);
     this.dependencies.push(flatpak);
+    this.skipIfAll.push(async () =>
+      await isInstalledFlatpakPackage(this.packageName)
+    );
   }
 
   async run(): Promise<RunResult> {
-    if (await isInstalledFlatpakPackage(this.packageName)) {
-      return `Already installed Flatpak package ${this.packageName}.`;
-    }
-
     await ensureSuccessful(ROOT, [
       "flatpak",
       "install",
@@ -182,13 +186,12 @@ export class RemoveFlatpakPackage
     super(packageName);
     this.locks.push(FLATPAK);
     this.dependencies.push(flatpak);
+    this.skipIfAll.push(async () =>
+      !await isInstalledFlatpakPackage(this.packageName)
+    );
   }
 
   async run(): Promise<RunResult> {
-    if (!await isInstalledFlatpakPackage(this.packageName)) {
-      return `Already removed Flatpak package ${this.packageName}.`;
-    }
-
     await ensureSuccessful(ROOT, [
       "flatpak",
       "uninstall",

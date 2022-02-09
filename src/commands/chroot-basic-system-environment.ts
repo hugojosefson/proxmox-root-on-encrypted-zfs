@@ -18,20 +18,33 @@ function inChrootPrefix(cmds: string): string[] {
   ];
 }
 
-const chrootMountCmds = `
-mount --make-private --rbind /dev  /mnt/dev
-mount --make-private --rbind /proc /mnt/proc
-mount --make-private --rbind /sys  /mnt/sys
-`;
-const chrootMount = Command.custom()
-  .withDependencies([
-    hostname,
-    networkInterface,
-    aptSourcesListMnt,
-  ])
-  .withRun(async () => {
-    await ensureSuccessful(ROOT, ["sh", "-c", chrootMountCmds]);
-  });
+const chrootMount = (paths: string[]) =>
+  Command.custom()
+    .withDependencies(paths.map((path) =>
+      Command.custom()
+        .withDependencies([
+          hostname,
+          networkInterface,
+          aptSourcesListMnt,
+        ])
+        .withSkipIfAll([async () => {
+          await ensureSuccessful(ROOT, [
+            "sh",
+            "-c",
+            `mount | grep "/mnt${path}"`,
+          ]);
+          return true;
+        }])
+        .withRun(async () => {
+          await ensureSuccessful(ROOT, [
+            "mount",
+            "--make-private",
+            "--rbind",
+            path,
+            "/mnt" + path,
+          ]);
+        })
+    ));
 
 export function inChrootCommand(
   cmds: string,
@@ -41,7 +54,7 @@ export function inChrootCommand(
   return Command.custom()
     .withDependencies([
       skipDependencyOnChrootBasicSystemEnvironment
-        ? chrootMount
+        ? chrootMount(["/dev", "/proc", "/sys"])
         : chrootBasicSystemEnvironment,
     ])
     .withRun(async () => {
@@ -51,7 +64,7 @@ export function inChrootCommand(
 
 export const chrootBasicSystemEnvironment = inChrootCommand(
   `
-ln -s /proc/self/mounts /etc/mtab
+ln -sf /proc/self/mounts /etc/mtab
 apt-get update
 
 debconf-set-selections << 'EOF'
