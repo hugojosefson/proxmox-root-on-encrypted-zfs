@@ -31,8 +31,8 @@ export class Exec extends Command {
     );
   }
 
-  toJSON(): string {
-    return `Exec(${JSON.stringify(this.asUser)}, ${this.cmd}${
+  toString(): string {
+    return `Exec(${(this.asUser.toString())}, ${this.cmd}${
       this.options ? ", " + JSON.stringify(this.options) : ""
     })`;
   }

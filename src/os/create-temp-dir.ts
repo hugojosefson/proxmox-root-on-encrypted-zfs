@@ -10,7 +10,7 @@ export const createTempDir = async (
   const fileSystemPath = FileSystemPath.of(asUser, path);
   config.VERBOSE && console.warn(
     colorlog.warning(
-      `createTempDir: fileSystemPath: ${JSON.stringify(fileSystemPath)}`,
+      `createTempDir: fileSystemPath: ${fileSystemPath.toString()}`,
     ),
   );
   return fileSystemPath;

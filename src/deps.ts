@@ -47,6 +47,9 @@ export const parsePasswd = (content: string): Array<PasswdEntry> => {
         toJSON: function () {
           return this.username;
         },
+        toString: function () {
+          return this.username;
+        },
       }),
     );
 };

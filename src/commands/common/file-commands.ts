@@ -29,9 +29,9 @@ export abstract class AbstractFileCommand extends Command {
     this.locks.push(this.path);
   }
 
-  toJSON(): string {
-    return `AbstractFileCommand(${JSON.stringify(this.owner)}, ${
-      JSON.stringify(this.path)
+  toString(): string {
+    return `AbstractFileCommand(${this.owner.toString()}, ${
+      this.path.toString()
     }, ${formatOctal(this.mode)})`;
   }
 
@@ -151,9 +151,9 @@ export class CreateFile extends AbstractFileCommand {
     this.shouldBackupAnyExistingFile = shouldBackupAnyExistingFile;
   }
 
-  toJSON(): string {
-    return `CreateFile(${JSON.stringify(this.owner)}, ${
-      JSON.stringify(this.path)
+  toString(): string {
+    return `CreateFile(${this.owner.toString()}, ${
+      this.path.toString()
     }, ${formatOctal(this.mode)}, ${this.contents.length} bytes${
       this.shouldBackupAnyExistingFile ? ", shouldBackupAnyExistingFile" : ""
     })`;
@@ -167,7 +167,7 @@ export class CreateFile extends AbstractFileCommand {
       this.shouldBackupAnyExistingFile,
       this.mode,
     );
-    return `Created file ${JSON.stringify(this)}.` +
+    return `Created file ${this.toString()}.` +
       (backupFilePath ? `\nBacked up previous file to ${backupFilePath}` : "");
   }
 }
@@ -187,15 +187,13 @@ export class CreateDir extends Command {
     this.path = path;
   }
 
-  toJSON(): string {
-    return `CreateDir(${JSON.stringify(this.owner)}, ${
-      JSON.stringify(this.path)
-    })`;
+  toString(): string {
+    return `CreateDir(${this.owner.toString()}, ${this.path.toString()})`;
   }
 
   async run(): Promise<RunResult> {
     await createDir(this.owner, this.path);
-    return `Created dir ${JSON.stringify(this)}.`;
+    return `Created dir ${this.toString()}.`;
   }
 }
 
@@ -243,15 +241,15 @@ export class LineInFile extends AbstractFileCommand {
     this.line = line;
   }
 
-  toJSON(): string {
-    return `LineInFile(${JSON.stringify(this.owner)}, ${
-      JSON.stringify(this.path)
+  toString(): string {
+    return `LineInFile(${this.owner.toString()}, ${
+      this.path.toString()
     }, ${JSON.stringify(this.line)})`;
   }
 
   async run(): Promise<RunResult> {
     await ensureLineInFile(this.line)(this.owner, this.path);
-    return `Line ensured in file ${JSON.stringify(this)}.`;
+    return `Line ensured in file ${this.toString()}.`;
   }
 }
 
@@ -265,9 +263,9 @@ export class UserInGroup extends Command {
     this.group = group;
   }
 
-  toJSON(): string {
-    return `UserInGroup(${JSON.stringify(this.user)}, ${
-      JSON.stringify(this.group)
+  toString(): string {
+    return `UserInGroup(${this.user.toString()}, ${
+      this.group.toString()
     })`;
   }
 

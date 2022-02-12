@@ -24,8 +24,8 @@ export class FileSystemPath extends Lock {
     this.path = path;
   }
 
-  toJSON() {
-    return `FileSystemPath(${JSON.stringify(this.path)})`;
+  toString() {
+    return `FileSystemPath(${this.path.toString()})`;
   }
 
   private static ofAbsolutePath(absolutePath: string): FileSystemPath {
@@ -48,8 +48,8 @@ export class FileSystemPath extends Lock {
     const resolvedPath: string = resolvePath(user, path);
     if (!resolvedPath) {
       throw new Error(
-        `of(user: ${JSON.stringify(user)}, path: ${
-          JSON.stringify(path)
+        `of(user: ${user.toString()}, path: ${
+          path.toString()
         }): resolvedPath is not.`,
       );
     }

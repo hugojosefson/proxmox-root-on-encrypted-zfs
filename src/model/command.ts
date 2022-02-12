@@ -22,15 +22,19 @@ export class Command {
     this.name = name;
   }
 
-  toJSON(): string {
+  toJSON() {
+    return this.toString()
+  }
+
+  toString(): string {
     return [
-      `Command.custom(${JSON.stringify(this.name)})`,
+      `Command.custom(${this.name})`,
       this.locks.length ? `\n    .withLocks([${
-        this.locks.map((lock) => JSON.stringify(lock)).join(", ")
+        this.locks.map((lock) => lock.toString()).join(", ")
       }])` : "",
       this.dependencies.length
         ? `\n    .withDependencies([${
-          this.dependencies.map((dep) => JSON.stringify(dep.name)).join(", ")
+          this.dependencies.map((dep) => dep.name).join(", ")
         }])`
         : "",
       this.run !== Command.prototype.run
@@ -74,7 +78,7 @@ export class Command {
     if (await this.shouldSkip()) {
       const runResult: CommandResult = {
         status: { success: true, code: 0 },
-        stdout: `Already done: ${JSON.stringify(this)}`,
+        stdout: `Already done: ${this.toString()}`,
         stderr: "",
       } as const;
       this.doneDeferred.resolve(runResult);
@@ -85,7 +89,7 @@ export class Command {
       return this.done;
     }
 
-    config.VERBOSE && console.error(`Running command `, JSON.stringify(this));
+    config.VERBOSE && console.error(`Running command `, this.toString());
     const dependenciesDone = this.dependencies.map(({ done }) => done);
     const lockReleaserPromises = this.locks.map((lock) => lock.take());
     await Promise.all(dependenciesDone);
@@ -96,7 +100,7 @@ export class Command {
         this.doneDeferred.reject,
       ));
       config.VERBOSE &&
-        console.error(`Running command ${JSON.stringify(this)} DONE.`);
+        console.error(`Running command ${this.toString()} DONE.`);
       return this.resolve(innerResult);
     } finally {
       lockReleasers.forEach((releaseLock) => releaseLock());
@@ -116,7 +120,7 @@ export class Command {
     if (!commandResult) {
       this.doneDeferred.resolve({
         status: { success: true, code: 0 },
-        stdout: `Success: ${JSON.stringify(this)}`,
+        stdout: `Success: ${this.toString()}`,
         stderr: "",
       });
       return this.done;
