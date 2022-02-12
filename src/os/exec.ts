@@ -130,7 +130,9 @@ async function _ensureSuccessful(
   });
 }
 
-export const ensureSuccessful = memoize(_ensureSuccessful);
+export const ensureSuccessful: typeof _ensureSuccessful = memoize(
+  _ensureSuccessful,
+);
 
 export const symlink = (
   owner: PasswdEntry,

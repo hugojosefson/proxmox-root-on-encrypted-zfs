@@ -48,9 +48,7 @@ export class FileSystemPath extends Lock {
     const resolvedPath: string = resolvePath(user, path);
     if (!resolvedPath) {
       throw new Error(
-        `of(user: ${user.toString()}, path: ${
-          path.toString()
-        }): resolvedPath is not.`,
+        `of(user: ${user.toString()}, path: ${path.toString()}): resolvedPath is not.`,
       );
     }
     return FileSystemPath.ofAbsolutePathMemoized(resolvedPath);

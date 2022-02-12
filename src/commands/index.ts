@@ -30,6 +30,10 @@ import { chrootTmpfs } from "./chroot-tmpfs.ts";
 import { chrootSsh } from "./chroot-ssh.ts";
 import { debian5GrubInstallation } from "./debian-5-grub-installation.ts";
 import { NOOP } from "./common/noop.ts";
+import {
+  debian6FirstBoot,
+  zfsSnapshotInstallation,
+} from "./debian-6-first-boot.ts";
 
 const commands: Record<string, Command> = {
   debian,
@@ -38,6 +42,7 @@ const commands: Record<string, Command> = {
   debian3SystemInstallation,
   debian4SystemConfiguration,
   debian5GrubInstallation,
+  debian6FirstBoot,
   destroyAllPoolsAndDisks,
   nullCommand: NOOP(),
   upgradeOsPackages: InstallOsPackage.upgradePackages(),
@@ -52,6 +57,7 @@ const commands: Record<string, Command> = {
   zfsPartitions,
   zfsBootPool,
   zfsRootPool,
+  zfsSnapshotInstallation,
   chrootBasicSystemEnvironment,
   chrootZfs,
   chrootGrub,

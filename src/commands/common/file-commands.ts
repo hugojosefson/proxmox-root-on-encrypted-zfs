@@ -30,9 +30,9 @@ export abstract class AbstractFileCommand extends Command {
   }
 
   toString(): string {
-    return `AbstractFileCommand(${this.owner.toString()}, ${
-      this.path.toString()
-    }, ${formatOctal(this.mode)})`;
+    return `AbstractFileCommand(${this.owner.toString()}, ${this.path.toString()}, ${
+      formatOctal(this.mode)
+    })`;
   }
 
   abstract run(): Promise<RunResult>;
@@ -152,9 +152,9 @@ export class CreateFile extends AbstractFileCommand {
   }
 
   toString(): string {
-    return `CreateFile(${this.owner.toString()}, ${
-      this.path.toString()
-    }, ${formatOctal(this.mode)}, ${this.contents.length} bytes${
+    return `CreateFile(${this.owner.toString()}, ${this.path.toString()}, ${
+      formatOctal(this.mode)
+    }, ${this.contents.length} bytes${
       this.shouldBackupAnyExistingFile ? ", shouldBackupAnyExistingFile" : ""
     })`;
   }
@@ -242,9 +242,9 @@ export class LineInFile extends AbstractFileCommand {
   }
 
   toString(): string {
-    return `LineInFile(${this.owner.toString()}, ${
-      this.path.toString()
-    }, ${JSON.stringify(this.line)})`;
+    return `LineInFile(${this.owner.toString()}, ${this.path.toString()}, ${
+      JSON.stringify(this.line)
+    })`;
   }
 
   async run(): Promise<RunResult> {
@@ -264,9 +264,7 @@ export class UserInGroup extends Command {
   }
 
   toString(): string {
-    return `UserInGroup(${this.user.toString()}, ${
-      this.group.toString()
-    })`;
+    return `UserInGroup(${this.user.toString()}, ${this.group.toString()})`;
   }
 
   async run(): Promise<RunResult> {

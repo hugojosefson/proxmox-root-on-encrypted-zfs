@@ -2,6 +2,7 @@ import { inChrootCommand } from "./chroot-basic-system-environment.ts";
 import { debian4SystemConfiguration } from "./debian-4-system-configuration.ts";
 import { zfsPartition1BiosBoot } from "./debian-2-disk-formatting.ts";
 import { getDisk } from "../os/find-disk.ts";
+import { existsPath } from "./common/file-commands.ts";
 
 export const debian5GrubInstallation = inChrootCommand(
   "debian5GrubInstallation",
@@ -31,4 +32,26 @@ done
 sed -E 's|/mnt/?|/|' -i /etc/zfs/zfs-list.cache/?pool
 
 `,
-).withDependencies([debian4SystemConfiguration, zfsPartition1BiosBoot]);
+)
+  .withDependencies([debian4SystemConfiguration, zfsPartition1BiosBoot])
+  .withSkipIfAll([
+    debian4SystemConfiguration.shouldSkip.bind(debian4SystemConfiguration),
+    () => existsPath("/etc/zfs/zfs-list.cache/bpool".split("/")),
+    () => existsPath("/etc/zfs/zfs-list.cache/rpool".split("/")),
+    async () =>
+      (await Deno.readTextFile("/etc/zfs/zfs-list.cache/bpool")).includes(
+        "/etc/zfs/zfs-list.cache",
+      ),
+    async () =>
+      (await Deno.readTextFile("/etc/zfs/zfs-list.cache/rpool")).includes(
+        "/etc/zfs/zfs-list.cache",
+      ),
+    async () =>
+      !(await Deno.readTextFile("/etc/zfs/zfs-list.cache/bpool")).includes(
+        "/mnt/",
+      ),
+    async () =>
+      !(await Deno.readTextFile("/etc/zfs/zfs-list.cache/rpool")).includes(
+        "/mnt/",
+      ),
+  ]);

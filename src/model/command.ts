@@ -23,15 +23,17 @@ export class Command {
   }
 
   toJSON() {
-    return this.toString()
+    return this.toString();
   }
 
   toString(): string {
     return [
       `Command.custom(${this.name})`,
-      this.locks.length ? `\n    .withLocks([${
-        this.locks.map((lock) => lock.toString()).join(", ")
-      }])` : "",
+      this.locks.length
+        ? `\n    .withLocks([${
+          this.locks.map((lock) => lock.toString()).join(", ")
+        }])`
+        : "",
       this.dependencies.length
         ? `\n    .withDependencies([${
           this.dependencies.map((dep) => dep.name).join(", ")
@@ -144,7 +146,7 @@ export class Command {
     return this.done;
   }
 
-  static sequential(commands: Array<Command>): Command {
+  static sequential(name: string, commands: Array<Command>): Command {
     if (commands.length === 0) {
       return NOOP();
     }
@@ -153,7 +155,7 @@ export class Command {
     }
     const head = commands[0];
     const tail = commands.slice(1);
-    return Command.custom(`sequential(${head.name})`)
+    return Command.custom(`sequential(${name}, ${head.name})`)
       .withDependencies([...tail, ...head.dependencies])
       .withLocks(head.locks)
       .withRun(head.run);
@@ -164,7 +166,7 @@ export class Command {
       this.dependencies.push(...dependencies);
       return this;
     }
-    return Command.sequential([
+    return Command.sequential(this.name, [
       Command.custom(this.name).withDependencies(dependencies),
       this,
     ]);
