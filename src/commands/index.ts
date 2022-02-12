@@ -9,7 +9,6 @@ import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
 import {
   debian2DiskFormatting,
   zfsBootPool,
-  zfsPartition1BiosBoot,
   zfsPartition2Efi,
   zfsPartition3Boot,
   zfsPartition4Root,
@@ -50,7 +49,6 @@ const commands: Record<string, Command> = {
   aptSourcesList,
   vim,
   gsettings,
-  zfsPartition1BiosBoot,
   zfsPartition2Efi,
   zfsPartition3Boot,
   zfsPartition4Root,
