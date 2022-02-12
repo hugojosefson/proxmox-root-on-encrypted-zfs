@@ -20,8 +20,8 @@ export abstract class AbstractPackageCommand<T extends PackageName>
     this.packageName = packageName;
   }
 
-  toString() {
-    return JSON.stringify({ packageName: this.packageName });
+  toJSON() {
+    return `AbstractPackageCommand(${this.packageName})`;
   }
 }
 
@@ -35,6 +35,10 @@ export class InstallOsPackage extends AbstractPackageCommand<OsPackageName> {
     this.skipIfAll.push(async () =>
       await isInstalledOsPackage(this.packageName)
     );
+  }
+
+  toJSON(): string {
+    return `InstallOsPackage(${this.packageName})`;
   }
 
   async run(): Promise<RunResult> {
@@ -52,16 +56,18 @@ export class InstallOsPackage extends AbstractPackageCommand<OsPackageName> {
     (packageName: OsPackageName): InstallOsPackage =>
       new InstallOsPackage(packageName),
   );
+
   static upgradePackages() {
-    return new Command().withLocks([OS_PACKAGE_SYSTEM]).withRun(() =>
-      ensureSuccessful(ROOT, [
-        "apt-get",
-        "full-upgrade",
-        "-y",
-        "--purge",
-        "--auto-remove",
-      ])
-    );
+    return Command.custom().withLocks([OS_PACKAGE_SYSTEM])
+      .withRun(() =>
+        ensureSuccessful(ROOT, [
+          "apt-get",
+          "full-upgrade",
+          "-y",
+          "--purge",
+          "--auto-remove",
+        ])
+      );
   }
 }
 
@@ -73,6 +79,10 @@ export class RemoveOsPackage extends AbstractPackageCommand<OsPackageName> {
     this.skipIfAll.push(async () =>
       !await isInstalledOsPackage(this.packageName)
     );
+  }
+
+  toJSON(): string {
+    return `RemoveOsPackage(${this.packageName})`;
   }
 
   async run(): Promise<RunResult> {
@@ -115,6 +125,10 @@ export class ReplaceOsPackage extends Command {
     );
   }
 
+  toJSON(): string {
+    return `ReplaceOsPackage(-${this.removePackageName}, +${this.installPackageName})`;
+  }
+
   async run(): Promise<RunResult> {
     await ensureSuccessful(ROOT, [
       "apt-get",
@@ -128,12 +142,14 @@ export class ReplaceOsPackage extends Command {
 
     return `Replaced package ${this.removePackageName} with ${this.installPackageName}.`;
   }
+
   /**
    * @deprecated Use .of2() instead.
    */
   static of(): Command {
     throw new Error("Use .of2() instead.");
   }
+
   static of2: (
     removePackageName: OsPackageName,
     installPackageName: OsPackageName,
@@ -144,7 +160,7 @@ export class ReplaceOsPackage extends Command {
 }
 
 export const flatpakOsPackages = ["xdg-desktop-portal-gtk", "flatpak"];
-export const flatpak: Command = Command.custom()
+export const flatpak = Command.custom()
   .withDependencies(flatpakOsPackages.map(InstallOsPackage.of));
 
 export class InstallFlatpakPackage
@@ -156,6 +172,10 @@ export class InstallFlatpakPackage
     this.skipIfAll.push(async () =>
       await isInstalledFlatpakPackage(this.packageName)
     );
+  }
+
+  toJSON(): string {
+    return `InstallFlatpakPackage(${this.packageName})`;
   }
 
   async run(): Promise<RunResult> {
@@ -189,6 +209,10 @@ export class RemoveFlatpakPackage
     this.skipIfAll.push(async () =>
       !await isInstalledFlatpakPackage(this.packageName)
     );
+  }
+
+  toJSON(): string {
+    return `RemoveFlatpakPackage(${this.packageName})`;
   }
 
   async run(): Promise<RunResult> {
