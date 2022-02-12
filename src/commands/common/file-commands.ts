@@ -4,6 +4,13 @@ import { FileSystemPath } from "../../model/dependency.ts";
 import { ensureSuccessful, isSuccessful, symlink } from "../../os/exec.ts";
 import { ROOT } from "../../os/user/root.ts";
 
+function formatOctal(mode: number | undefined): string {
+  if (typeof mode === "undefined") {
+    return "undefined";
+  }
+  return `${(mode >> 6) % 8}${(mode >> 3) % 8}${(mode >> 0) % 8}`;
+}
+
 export abstract class AbstractFileCommand extends Command {
   readonly owner: PasswdEntry;
   readonly path: FileSystemPath;
@@ -21,8 +28,10 @@ export abstract class AbstractFileCommand extends Command {
     this.locks.push(this.path);
   }
 
-  toString(): string {
-    return `${this.constructor.name}(${this.owner.username}, ${this.path}, ${this.mode})`;
+  toJSON(): string {
+    return `AbstractFileCommand(${JSON.stringify(this.owner)}, ${
+      JSON.stringify(this.path)
+    }, ${formatOctal(this.mode)})`;
   }
 
   abstract run(): Promise<RunResult>;
@@ -140,6 +149,14 @@ export class CreateFile extends AbstractFileCommand {
     this.shouldBackupAnyExistingFile = shouldBackupAnyExistingFile;
   }
 
+  toJSON(): string {
+    return `CreateFile(${JSON.stringify(this.owner)}, ${
+      JSON.stringify(this.path)
+    }, ${formatOctal(this.mode)}, ${this.contents.length} bytes${
+      this.shouldBackupAnyExistingFile ? ", shouldBackupAnyExistingFile" : ""
+    })`;
+  }
+
   async run(): Promise<RunResult> {
     const backupFilePath: FileSystemPath | undefined = await createFile(
       this.owner,
@@ -148,7 +165,7 @@ export class CreateFile extends AbstractFileCommand {
       this.shouldBackupAnyExistingFile,
       this.mode,
     );
-    return `Created file ${this.toString()}.` +
+    return `Created file ${JSON.stringify(this)}.` +
       (backupFilePath ? `\nBacked up previous file to ${backupFilePath}` : "");
   }
 }
@@ -168,13 +185,15 @@ export class CreateDir extends Command {
     this.path = path;
   }
 
-  toString(): string {
-    return `${this.constructor.name}(${this.owner.username}, ${this.path})`;
+  toJSON(): string {
+    return `CreateDir(${JSON.stringify(this.owner)}, ${
+      JSON.stringify(this.path)
+    })`;
   }
 
   async run(): Promise<RunResult> {
     await createDir(this.owner, this.path);
-    return `Created dir ${this.toString()}.`;
+    return `Created dir ${JSON.stringify(this)}.`;
   }
 }
 
@@ -221,15 +240,15 @@ export class LineInFile extends AbstractFileCommand {
     this.line = line;
   }
 
-  toString(): string {
-    return `${this.constructor.name}(${this.owner.username}, ${this.path}, ${
-      JSON.stringify(this.line)
-    })`;
+  toJSON(): string {
+    return `LineInFile(${JSON.stringify(this.owner)}, ${
+      JSON.stringify(this.path)
+    }, ${JSON.stringify(this.line)})`;
   }
 
   async run(): Promise<RunResult> {
     await ensureLineInFile(this.line)(this.owner, this.path);
-    return `Line ensured in file ${this.toString()}.`;
+    return `Line ensured in file ${JSON.stringify(this)}.`;
   }
 }
 
@@ -241,6 +260,12 @@ export class UserInGroup extends Command {
     super();
     this.user = user;
     this.group = group;
+  }
+
+  toJSON(): string {
+    return `UserInGroup(${JSON.stringify(this.user)}, ${
+      JSON.stringify(this.group)
+    })`;
   }
 
   async run(): Promise<RunResult> {
