@@ -77,7 +77,10 @@ export class Command {
   }
 
   async runWhenDependenciesAreDone(): Promise<CommandResult> {
+    const dependenciesDone = this.dependencies.map(({ done }) => done);
     if (await this.shouldSkip()) {
+      config.VERBOSE && console.error(`Skipping command `, this.toString());
+      await Promise.all(dependenciesDone);
       const runResult: CommandResult = {
         status: { success: true, code: 0 },
         stdout: `Already done: ${this.toString()}`,
@@ -92,7 +95,6 @@ export class Command {
     }
 
     config.VERBOSE && console.error(`Running command `, this.toString());
-    const dependenciesDone = this.dependencies.map(({ done }) => done);
     const lockReleaserPromises = this.locks.map((lock) => lock.take());
     await Promise.all(dependenciesDone);
 

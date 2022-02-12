@@ -1,5 +1,4 @@
 import { inChrootCommand } from "./chroot-basic-system-environment.ts";
-import { config } from "../config.ts";
 import { getDisk } from "../os/find-disk.ts";
 
 export const chrootGrub = inChrootCommand(
