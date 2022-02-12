@@ -7,7 +7,7 @@ import { ROOT } from "../os/user/root.ts";
 import { existsPath } from "./common/file-commands.ts";
 import { getDisk } from "../os/find-disk.ts";
 
-export const zfsPartition1BiosBoot = Command.custom()
+export const zfsPartition1BiosBoot = Command.custom("zfsPartition1BiosBoot")
   .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([debian1PrepareInstallEnv])
   .withSkipIfAll([
@@ -25,7 +25,7 @@ export const zfsPartition1BiosBoot = Command.custom()
     await ensureSuccessful(ROOT, ["sleep", "5"]);
   });
 
-export const zfsPartition2Efi = Command.custom()
+export const zfsPartition2Efi = Command.custom("zfsPartition2Efi")
   .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([debian1PrepareInstallEnv])
   .withSkipIfAll([
@@ -43,7 +43,7 @@ export const zfsPartition2Efi = Command.custom()
     await ensureSuccessful(ROOT, ["sleep", "5"]);
   });
 
-export const zfsPartition3Boot = Command.custom()
+export const zfsPartition3Boot = Command.custom("zfsPartition3Boot")
   .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([debian1PrepareInstallEnv])
   .withSkipIfAll([
@@ -61,7 +61,7 @@ export const zfsPartition3Boot = Command.custom()
     await ensureSuccessful(ROOT, ["sleep", "5"]);
   });
 
-export const zfsPartition4Root = Command.custom()
+export const zfsPartition4Root = Command.custom("zfsPartition4Root")
   .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([debian1PrepareInstallEnv])
   .withSkipIfAll([
@@ -79,7 +79,7 @@ export const zfsPartition4Root = Command.custom()
     await ensureSuccessful(ROOT, ["sleep", "5"]);
   });
 
-export const zfsBootPool = Command.custom()
+export const zfsBootPool = Command.custom("zfsBootPool")
   .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([zfsPartition3Boot])
   .withSkipIfAll([
@@ -131,7 +131,7 @@ export const zfsBootPool = Command.custom()
     ]);
   });
 
-export const zfsRootPool = Command.custom()
+export const zfsRootPool = Command.custom("zfsRootPool")
   .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([zfsPartition4Root])
   .withSkipIfAll([
@@ -172,7 +172,7 @@ export const zfsRootPool = Command.custom()
     });
   });
 
-export const zfsPartitions = Command.custom()
+export const zfsPartitions = Command.custom("zfsPartitions")
   .withDependencies([
     zfsPartition1BiosBoot,
     zfsPartition2Efi,
@@ -180,9 +180,10 @@ export const zfsPartitions = Command.custom()
     zfsPartition4Root,
   ]);
 
-export const debian2DiskFormatting = Command.custom().withDependencies([
-  debian1PrepareInstallEnv,
-  zfsPartitions,
-  zfsBootPool,
-  zfsRootPool,
-]);
+export const debian2DiskFormatting = Command.custom("debian2DiskFormatting")
+  .withDependencies([
+    debian1PrepareInstallEnv,
+    zfsPartitions,
+    zfsBootPool,
+    zfsRootPool,
+  ]);

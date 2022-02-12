@@ -25,7 +25,7 @@ export const etcHosts = new LineInFile(
 )
   .withDependencies([debian3SystemInstallation]);
 
-export const hostname = Command.custom().withDependencies([
+export const hostname = Command.custom("hostname").withDependencies([
   etcHostname,
   etcHosts,
 ]);

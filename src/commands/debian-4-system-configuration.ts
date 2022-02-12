@@ -4,7 +4,6 @@ import { networkInterface } from "./network-interface.ts";
 import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/root.ts";
-import { config } from "../config.ts";
 import { chrootBasicSystemEnvironment } from "./chroot-basic-system-environment.ts";
 import { chrootZfs } from "./chroot-zfs.ts";
 import { chrootGrub } from "./chroot-grub.ts";
@@ -16,7 +15,9 @@ import { chrootDropbearRemoteUnlocking } from "./chroot-dropbear-remote-unlockin
 import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
 import { getDisk } from "../os/find-disk.ts";
 
-export const debian4SystemConfiguration = Command.custom()
+export const debian4SystemConfiguration = Command.custom(
+  "debian4SystemConfiguration",
+)
   .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([
     debian3SystemInstallation,

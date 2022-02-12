@@ -15,7 +15,7 @@ async function gsettingsExecCommand(cmd: Array<string>): Promise<Exec> {
 }
 
 export const gsettings = await isInstalledOsPackage("libglib2.0-bin")
-  ? Command.custom()
+  ? Command.custom("gsettings")
     .withDependencies(
       await Promise.all(
         gsettingsToCmds(`
@@ -24,4 +24,4 @@ org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type nothing
 `).map(gsettingsExecCommand),
       ),
     )
-  : Command.custom();
+  : Command.custom("!gsettings");

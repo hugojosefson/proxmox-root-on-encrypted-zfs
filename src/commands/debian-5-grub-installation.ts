@@ -3,7 +3,9 @@ import { debian4SystemConfiguration } from "./debian-4-system-configuration.ts";
 import { zfsPartition1BiosBoot } from "./debian-2-disk-formatting.ts";
 import { getDisk } from "../os/find-disk.ts";
 
-export const debian5GrubInstallation = inChrootCommand(`
+export const debian5GrubInstallation = inChrootCommand(
+  "debian5GrubInstallation",
+  `
 mkfs.fat ${await getDisk()}-part1
 grub-probe /boot/efi
 
@@ -28,4 +30,5 @@ while pidof zed; do
 done
 sed -E 's|/mnt/?|/|' -i /etc/zfs/zfs-list.cache/?pool
 
-`).withDependencies([debian4SystemConfiguration, zfsPartition1BiosBoot]);
+`,
+).withDependencies([debian4SystemConfiguration, zfsPartition1BiosBoot]);

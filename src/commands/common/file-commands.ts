@@ -17,11 +17,12 @@ export abstract class AbstractFileCommand extends Command {
   readonly mode?: number;
 
   protected constructor(
+    name: string,
     owner: PasswdEntry,
     path: FileSystemPath,
     mode?: number,
   ) {
-    super();
+    super(name);
     this.owner = owner;
     this.path = path;
     this.mode = mode;
@@ -141,6 +142,7 @@ export class CreateFile extends AbstractFileCommand {
     mode?: number,
   ) {
     super(
+      "CreateFile",
       owner,
       path,
       mode,
@@ -179,7 +181,7 @@ export class CreateDir extends Command {
   readonly path: FileSystemPath;
 
   constructor(owner: PasswdEntry, path: FileSystemPath) {
-    super();
+    super("CreateDir");
     this.locks.push(path);
     this.owner = owner;
     this.path = path;
@@ -234,6 +236,7 @@ export class LineInFile extends AbstractFileCommand {
 
   constructor(owner: PasswdEntry, path: FileSystemPath, line: string) {
     super(
+      "LineInFile",
       owner,
       path,
     );
@@ -257,7 +260,7 @@ export class UserInGroup extends Command {
   readonly group: string;
 
   constructor(user: PasswdEntry, group: string) {
-    super();
+    super("UserInGroup");
     this.user = user;
     this.group = group;
   }
@@ -282,7 +285,7 @@ export class Symlink extends AbstractFileCommand {
   readonly target: string;
 
   constructor(owner: PasswdEntry, from: string, to: FileSystemPath) {
-    super(owner, to);
+    super("Symlink", owner, to);
     this.target = from;
   }
 

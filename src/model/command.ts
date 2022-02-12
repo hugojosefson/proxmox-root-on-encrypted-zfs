@@ -11,16 +11,20 @@ export interface CommandResult {
 }
 
 export class Command {
+  readonly name: string;
   readonly dependencies: Array<Command> = new Array(0);
   readonly locks: Array<Lock> = new Array(0);
   readonly skipIfAll: Array<Predicate> = new Array(0);
   readonly doneDeferred: Deferred<CommandResult> = defer();
   readonly done: Promise<CommandResult> = this.doneDeferred.promise;
 
+  constructor(name: string) {
+    this.name = name;
+  }
+
   toJSON(): string {
     return [
-      // `Command.custom(${JSON.stringify(this.name)})`,
-      `Command.custom()`,
+      `Command.custom(${JSON.stringify(this.name)})`,
       this.locks.length ? `.withLocks(${this.locks.length} locks)` : "",
       this.dependencies.length
         ? `.withDependencies(${this.dependencies.length} deps)`
@@ -66,7 +70,7 @@ export class Command {
     if (await this.shouldSkip()) {
       const runResult: CommandResult = {
         status: { success: true, code: 0 },
-        stdout: "already_done",
+        stdout: `${this.name} already done.`,
         stderr: "",
       } as const;
       this.doneDeferred.resolve(runResult);
@@ -94,8 +98,8 @@ export class Command {
     }
   }
 
-  static custom(): Command {
-    return (new Command());
+  static custom(name: string): Command {
+    return new Command(name);
   }
 
   async run(): Promise<RunResult> {
@@ -140,7 +144,7 @@ export class Command {
     }
     const head = commands[0];
     const tail = commands.slice(1);
-    return (new Command())
+    return Command.custom(`sequential(${head.name})`)
       .withDependencies([...tail, ...head.dependencies])
       .withLocks(head.locks)
       .withRun(head.run);
@@ -152,7 +156,7 @@ export class Command {
       return this;
     }
     return Command.sequential([
-      Command.custom().withDependencies(dependencies),
+      Command.custom(this.name).withDependencies(dependencies),
       this,
     ]);
   }

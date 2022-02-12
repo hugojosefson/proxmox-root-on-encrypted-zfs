@@ -19,9 +19,9 @@ function inChrootPrefix(cmds: string): string[] {
 }
 
 const chrootMount = (paths: string[]) =>
-  Command.custom()
+  Command.custom("chrootMount")
     .withDependencies(paths.map((path) =>
-      Command.custom()
+      Command.custom(path)
         .withDependencies([
           hostname,
           networkInterface,
@@ -47,11 +47,12 @@ const chrootMount = (paths: string[]) =>
     ));
 
 export function inChrootCommand(
+  name: string,
   cmds: string,
   options?: ExecOptions,
   skipDependencyOnChrootBasicSystemEnvironment = false,
 ): Command {
-  return Command.custom()
+  return Command.custom(`inChrootCommand(${name})`)
     .withDependencies([
       skipDependencyOnChrootBasicSystemEnvironment
         ? chrootMount(["/dev", "/proc", "/sys"])
@@ -63,6 +64,7 @@ export function inChrootCommand(
 }
 
 export const chrootBasicSystemEnvironment = inChrootCommand(
+  "chrootBasicSystemEnvironment",
   `
 ln -sf /proc/self/mounts /etc/mtab
 apt-get update

@@ -1,7 +1,9 @@
 import { inChrootCommand } from "./chroot-basic-system-environment.ts";
 import { zfsBootPool } from "./debian-2-disk-formatting.ts";
 
-export const chrootZfsBpool = inChrootCommand(`
+export const chrootZfsBpool = inChrootCommand(
+  "chrootZfsBpool",
+  `
 mkdir -p /etc/systemd/system/
 
 cat > /etc/systemd/system/zfs-import-bpool.service << 'EOF'
@@ -23,4 +25,5 @@ WantedBy=zfs-import.target
 EOF
 
 systemctl enable zfs-import-bpool.service
-`).withDependencies([zfsBootPool]);
+`,
+).withDependencies([zfsBootPool]);

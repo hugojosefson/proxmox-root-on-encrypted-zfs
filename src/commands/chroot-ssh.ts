@@ -5,6 +5,7 @@ import { config } from "../config.ts";
 import { ROOT } from "../os/user/root.ts";
 
 const chrootInstallOpenSshServer = inChrootCommand(
+  "chrootInstallOpenSshServer",
   "apt-get install -y openssh-server",
 );
 

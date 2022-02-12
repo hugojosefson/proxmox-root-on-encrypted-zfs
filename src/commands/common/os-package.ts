@@ -15,8 +15,8 @@ export abstract class AbstractPackageCommand<T extends PackageName>
   extends Command {
   readonly packageName: T;
 
-  protected constructor(packageName: T) {
-    super();
+  protected constructor(name: string, packageName: T) {
+    super(name);
     this.packageName = packageName;
   }
 
@@ -27,7 +27,7 @@ export abstract class AbstractPackageCommand<T extends PackageName>
 
 export class InstallOsPackage extends AbstractPackageCommand<OsPackageName> {
   private constructor(packageName: OsPackageName) {
-    super(packageName);
+    super("InstallOsPackage", packageName);
     this.locks.push(OS_PACKAGE_SYSTEM);
     this.dependencies.push(
       REFRESH_OS_PACKAGES,
@@ -58,7 +58,7 @@ export class InstallOsPackage extends AbstractPackageCommand<OsPackageName> {
   );
 
   static upgradePackages() {
-    return Command.custom().withLocks([OS_PACKAGE_SYSTEM])
+    return Command.custom("upgradePackages").withLocks([OS_PACKAGE_SYSTEM])
       .withRun(() =>
         ensureSuccessful(ROOT, [
           "apt-get",
@@ -73,7 +73,7 @@ export class InstallOsPackage extends AbstractPackageCommand<OsPackageName> {
 
 export class RemoveOsPackage extends AbstractPackageCommand<OsPackageName> {
   private constructor(packageName: OsPackageName) {
-    super(packageName);
+    super("RemoveOsPackage", packageName);
     this.locks.push(OS_PACKAGE_SYSTEM);
     this.dependencies.push(REFRESH_OS_PACKAGES);
     this.skipIfAll.push(async () =>
@@ -110,7 +110,7 @@ export class ReplaceOsPackage extends Command {
     removePackageName: OsPackageName,
     installPackageName: OsPackageName,
   ) {
-    super();
+    super("ReplaceOsPackage");
     this.locks.push(OS_PACKAGE_SYSTEM);
     this.dependencies.push(REFRESH_OS_PACKAGES);
 
@@ -160,13 +160,13 @@ export class ReplaceOsPackage extends Command {
 }
 
 export const flatpakOsPackages = ["xdg-desktop-portal-gtk", "flatpak"];
-export const flatpak = Command.custom()
+export const flatpak = Command.custom("flatpak")
   .withDependencies(flatpakOsPackages.map(InstallOsPackage.of));
 
 export class InstallFlatpakPackage
   extends AbstractPackageCommand<FlatpakPackageName> {
   private constructor(packageName: FlatpakPackageName) {
-    super(packageName);
+    super("InstallFlatpakPackage", packageName);
     this.locks.push(FLATPAK);
     this.dependencies.push(flatpak);
     this.skipIfAll.push(async () =>
@@ -203,7 +203,7 @@ export class InstallFlatpakPackage
 export class RemoveFlatpakPackage
   extends AbstractPackageCommand<FlatpakPackageName> {
   private constructor(packageName: FlatpakPackageName) {
-    super(packageName);
+    super("RemoveFlatpakPackage", packageName);
     this.locks.push(FLATPAK);
     this.dependencies.push(flatpak);
     this.skipIfAll.push(async () =>

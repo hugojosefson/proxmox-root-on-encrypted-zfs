@@ -5,7 +5,7 @@ import { FileSystemPath } from "../model/dependency.ts";
 import { findNetworkDevice } from "../os/find-network-device.ts";
 import { ROOT } from "../os/user/root.ts";
 
-export const networkInterface = Command.custom()
+export const networkInterface = Command.custom("networkInterface")
   .withDependencies([debian3SystemInstallation])
   .withRun(async () => {
     const device = await findNetworkDevice();

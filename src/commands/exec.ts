@@ -15,7 +15,7 @@ export class Exec extends Command {
     options: ExecOptions = {},
     cmd: Array<string>,
   ) {
-    super();
+    super("Exec");
     this.asUser = asUser;
     this.cmd = cmd;
     this.options = options;
@@ -42,7 +42,7 @@ export class Exec extends Command {
     options: ExecOptions,
     cmds: Array<Array<string>>,
   ): Command {
-    return (new Command())
+    return Command.custom("sequentialExec")
       .withRun(async () => {
         const results: Array<CommandResult> = [];
         for (const cmd of cmds) {

@@ -5,6 +5,7 @@ import { FileSystemPath } from "../model/dependency.ts";
 import { config } from "../config.ts";
 
 const chrootInstallDropbear = inChrootCommand(
+  "chrootInstallDropbear",
   "apt-get install -y --no-install-recommends dropbear-initramfs",
 );
 
@@ -17,12 +18,19 @@ const chrootWriteDropbearAuthorizedKeys = new CreateFile(
 ).withDependencies([chrootInstallDropbear]);
 
 const chrootCleanupDropbearAuthorizedKeys = inChrootCommand(
+  "chrootCleanupDropbearAuthorizedKeys",
   "sed -i '/ssh-ed25519/d' /etc/dropbear-initramfs/authorized_keys",
 )
   .withDependencies([chrootWriteDropbearAuthorizedKeys]);
 
-const chrootWriteDropbearNetworkConfig = inChrootCommand("echo TODO");
-const chrootUpdateInitramfs = inChrootCommand("update-initramfs -u -k all");
+const chrootWriteDropbearNetworkConfig = inChrootCommand(
+  "chrootWriteDropbearNetworkConfig",
+  "echo TODO",
+);
+const chrootUpdateInitramfs = inChrootCommand(
+  "chrootUpdateInitramfs",
+  "update-initramfs -u -k all",
+);
 
 export const chrootDropbearRemoteUnlocking = chrootUpdateInitramfs
   .withDependencies([
