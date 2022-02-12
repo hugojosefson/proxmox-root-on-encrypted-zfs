@@ -25,12 +25,16 @@ export class Command {
   toJSON(): string {
     return [
       `Command.custom(${JSON.stringify(this.name)})`,
-      this.locks.length ? `.withLocks(${this.locks.length} locks)` : "",
+      this.locks.length ? `\n    .withLocks([${
+        this.locks.map((lock) => JSON.stringify(lock)).join(", ")
+      }])` : "",
       this.dependencies.length
-        ? `.withDependencies(${this.dependencies.length} deps)`
+        ? `\n    .withDependencies([${
+          this.dependencies.map((dep) => JSON.stringify(dep.name)).join(", ")
+        }])`
         : "",
       this.run !== Command.prototype.run
-        ? `.withRun(${this.run.toString()})`
+        ? `\n    .withRun(${this.run.toString()})`
         : "",
     ].join("");
   }
