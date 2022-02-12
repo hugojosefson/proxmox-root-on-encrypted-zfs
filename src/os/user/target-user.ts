@@ -1,17 +1,21 @@
-import { parsePasswd, PasswdEntry } from "../../deps.ts";
-import { ensureSuccessfulStdOut } from "../exec.ts";
-import { ROOT } from "./root.ts";
+import { memoize, parsePasswd, PasswdEntry } from "../../deps.ts";
 import { defer, Deferred } from "../defer.ts";
 
-const byUid = (a: PasswdEntry, b: PasswdEntry) => a?.uid - b?.uid;
-
-const getUsers = async () =>
-  parsePasswd(await ensureSuccessfulStdOut(ROOT, ["getent", "passwd"]))
-    .sort(byUid);
+const uidComparator = (a: PasswdEntry, b: PasswdEntry) => a?.uid - b?.uid;
+async function _getUsers() {
+  const runOptions: Deno.RunOptions = {
+    cmd: ["getent", "passwd"],
+    stdout: "piped",
+  };
+  const outputBytes: Uint8Array = await Deno.run(runOptions).output();
+  const outputString = new TextDecoder().decode(outputBytes).trim();
+  return parsePasswd(outputString)
+    .sort(uidComparator);
+}
+const getUsers: typeof _getUsers = memoize(_getUsers);
 
 const SUDO_USER = "SUDO_USER";
-
-const getTargetUser = async (): Promise<PasswdEntry> => {
+async function _getTargetUser(): Promise<PasswdEntry> {
   const users: Array<PasswdEntry> = await getUsers();
   const sudoUser: string | undefined = Deno.env.get(
     SUDO_USER,
@@ -32,7 +36,8 @@ const getTargetUser = async (): Promise<PasswdEntry> => {
   throw new Error(
     `ERROR: No target user found. Log in graphically as the target user. Then use sudo.`,
   );
-};
+}
+export const getTargetUser: typeof _getTargetUser = memoize(_getTargetUser);
 
 const targetUserDefer: Deferred<PasswdEntry> = defer();
 export const targetUserPromise: Promise<PasswdEntry> = targetUserDefer.promise;
