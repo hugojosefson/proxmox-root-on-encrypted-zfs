@@ -31,6 +31,12 @@ export class Exec extends Command {
     );
   }
 
+  toJSON(): string {
+    return `Exec(${JSON.stringify(this.asUser)}, ${this.cmd}${
+      this.options ? ", " + JSON.stringify(this.options) : ""
+    })`;
+  }
+
   static sequentialExec(
     asUser: PasswdEntry,
     options: ExecOptions,

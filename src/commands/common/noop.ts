@@ -1,4 +1,8 @@
 import { Command } from "../../model/command.ts";
 import { memoize } from "../../deps.ts";
 
-export const NOOP = memoize(() => (new Command()));
+function getNoop(): Command {
+  return Command.custom();
+}
+
+export const NOOP: typeof getNoop = memoize(getNoop);

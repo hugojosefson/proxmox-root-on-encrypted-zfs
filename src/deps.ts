@@ -44,6 +44,9 @@ export const parsePasswd = (content: string): Array<PasswdEntry> => {
         homedir: homedir as string,
         uid: parseInt(uid as string, 10),
         gid: parseInt(gid as string, 10),
+        toJSON: function () {
+          return this.username;
+        },
       }),
     );
 };

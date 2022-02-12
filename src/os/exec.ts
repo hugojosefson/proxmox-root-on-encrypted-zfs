@@ -60,11 +60,11 @@ async function runOptions(
   };
 }
 
-export const ensureSuccessful = async (
+export async function ensureSuccessful(
   asUser: PasswdEntry,
   cmd: Array<string>,
   options: ExecOptions = {},
-): Promise<CommandResult> => {
+): Promise<CommandResult> {
   const effectiveCmd = [
     ...(asUser === ROOT ? [] : [
       "sudo",
@@ -128,7 +128,7 @@ export const ensureSuccessful = async (
     stdout: await stdoutPromise,
     stderr: await stderrPromise,
   });
-};
+}
 
 export const symlink = (
   owner: PasswdEntry,

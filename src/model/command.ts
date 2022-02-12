@@ -17,42 +17,67 @@ export class Command {
   readonly doneDeferred: Deferred<CommandResult> = defer();
   readonly done: Promise<CommandResult> = this.doneDeferred.promise;
 
-  toString(): string {
-    return this.constructor.name;
+  toJSON(): string {
+    return [
+      // `Command.custom(${JSON.stringify(this.name)})`,
+      `Command.custom()`,
+      this.locks.length ? `.withLocks(${this.locks.length} locks)` : "",
+      this.dependencies.length
+        ? `.withDependencies(${this.dependencies.length} deps)`
+        : "",
+      this.run !== Command.prototype.run
+        ? `.withRun(${this.run.toString()})`
+        : "",
+    ].join("");
   }
 
-  private async maybeMarkAsAlreadyDone(): Promise<void> {
-    if (this.skipIfAll.length) {
-      try {
-        await Promise.all(
-          this.skipIfAll.map(async (predicate) => {
-            if (await predicate()) {
-              return;
-            }
-            throw new Error(
-              `Let's stop wasting time on any more predicates. We have already decided to go ahead and run this command.`,
-            );
-          }),
-        );
-        this.doneDeferred.resolve({
-          status: { success: true, code: 0 },
-          stdout: "already_done",
-          stderr: "",
-        });
-      } catch (_ignore) {
-        // Some predicate failed, so we should run the command.
-      }
+  private _shouldSkip: boolean | undefined = undefined;
+  async shouldSkip(): Promise<boolean> {
+    if (typeof this._shouldSkip === "boolean") {
+      return this._shouldSkip;
     }
+
+    if (this.skipIfAll.length === 0) {
+      this._shouldSkip = false;
+      return this._shouldSkip;
+    }
+
+    try {
+      await Promise.all(
+        this.skipIfAll.map(async (predicate) => {
+          if (await predicate()) {
+            return;
+          }
+          throw new Error(
+            `Let's stop wasting time on any more predicates. We have already decided to go ahead and run this command.`,
+          );
+        }),
+      );
+      this._shouldSkip = true;
+      return this._shouldSkip;
+    } catch (_ignore) {
+      // Some predicate failed, so we should run the command.
+    }
+    this._shouldSkip = false;
+    return this._shouldSkip;
   }
 
   async runWhenDependenciesAreDone(): Promise<CommandResult> {
-    await this.maybeMarkAsAlreadyDone();
+    if (await this.shouldSkip()) {
+      const runResult: CommandResult = {
+        status: { success: true, code: 0 },
+        stdout: "already_done",
+        stderr: "",
+      } as const;
+      this.doneDeferred.resolve(runResult);
+      return runResult;
+    }
 
-    config.VERBOSE && console.error(`Running command `, this);
     if (this.doneDeferred.isDone) {
       return this.done;
     }
 
+    config.VERBOSE && console.error(`Running command `, JSON.stringify(this));
     const dependenciesDone = this.dependencies.map(({ done }) => done);
     const lockReleaserPromises = this.locks.map((lock) => lock.take());
     await Promise.all(dependenciesDone);
@@ -82,7 +107,7 @@ export class Command {
     if (!commandResult) {
       this.doneDeferred.resolve({
         status: { success: true, code: 0 },
-        stdout: `Success: ${this}`,
+        stdout: `Success: ${JSON.stringify(this)}`,
         stderr: "",
       });
       return this.done;

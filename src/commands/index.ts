@@ -9,6 +9,11 @@ import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
 import {
   debian2DiskFormatting,
   zfsBootPool,
+  zfsPartition1BiosBoot,
+  zfsPartition2Efi,
+  zfsPartition3Boot,
+  zfsPartition4Root,
+  zfsPartitions,
   zfsRootPool,
 } from "./debian-2-disk-formatting.ts";
 import { destroyAllPoolsAndDisks } from "./destroy-all-pools-and-disks.ts";
@@ -23,6 +28,8 @@ import { chrootPasswdRoot } from "./chroot-passwd-root.ts";
 import { chrootZfsBpool } from "./chroot-zfs-bpool.ts";
 import { chrootTmpfs } from "./chroot-tmpfs.ts";
 import { chrootSsh } from "./chroot-ssh.ts";
+import { debian5GrubInstallation } from "./debian-5-grub-installation.ts";
+import { NOOP } from "./common/noop.ts";
 
 const commands: Record<string, Command> = {
   debian,
@@ -30,13 +37,19 @@ const commands: Record<string, Command> = {
   debian2DiskFormatting,
   debian3SystemInstallation,
   debian4SystemConfiguration,
+  debian5GrubInstallation,
   destroyAllPoolsAndDisks,
-  nullCommand: Command.custom(),
+  nullCommand: NOOP(),
   upgradeOsPackages: InstallOsPackage.upgradePackages(),
   REFRESH_OS_PACKAGES,
   aptSourcesList,
   vim,
   gsettings,
+  zfsPartition1BiosBoot,
+  zfsPartition2Efi,
+  zfsPartition3Boot,
+  zfsPartition4Root,
+  zfsPartitions,
   zfsBootPool,
   zfsRootPool,
   chrootBasicSystemEnvironment,
