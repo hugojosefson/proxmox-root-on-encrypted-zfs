@@ -1,5 +1,5 @@
 import { config } from "../config.ts";
-import { colorlog, PasswdEntry } from "../deps.ts";
+import { colorlog, memoize, PasswdEntry } from "../deps.ts";
 import { CommandResult } from "../model/command.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { getDbusSessionBusAddress } from "./user/target-user.ts";
@@ -60,7 +60,7 @@ async function runOptions(
   };
 }
 
-export async function ensureSuccessful(
+async function _ensureSuccessful(
   asUser: PasswdEntry,
   cmd: Array<string>,
   options: ExecOptions = {},
@@ -129,6 +129,8 @@ export async function ensureSuccessful(
     stderr: await stderrPromise,
   });
 }
+
+export const ensureSuccessful = memoize(_ensureSuccessful);
 
 export const symlink = (
   owner: PasswdEntry,
