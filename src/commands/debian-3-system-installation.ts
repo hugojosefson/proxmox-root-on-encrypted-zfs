@@ -5,6 +5,7 @@ import { ROOT } from "../os/user/root.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { config } from "../config.ts";
 import { existsPath } from "./common/file-commands.ts";
+import { getDisk } from "../os/find-disk.ts";
 
 const cmds = `
 
@@ -49,7 +50,7 @@ cp /etc/zfs/zpool.cache /mnt/etc/zfs/
     `;
 
 export const debian3SystemInstallation = Command.custom()
-  .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
+  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([debian2DiskFormatting])
   .withSkipIfAll([() => existsPath("/mnt/etc/zfs/zpool.cache".split("/"))])
   .withRun(async () => {

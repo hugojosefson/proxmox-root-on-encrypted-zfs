@@ -1,8 +1,9 @@
 import { findBlockDevicesOfType } from "./find-block-devices-of-type.ts";
 import { ensureSuccessfulStdOut } from "./exec.ts";
 import { ROOT } from "./user/root.ts";
+import { memoize } from "../deps.ts";
 
-export async function findDisk(): Promise<string> {
+async function _findDisk(): Promise<string> {
   function findIdsCmd(targetDevice: string) {
     const targetDeviceRegex = targetDevice.replaceAll("/", "\\/");
     return `find /dev/disk/by-id/ -type l -exec echo -ne "{}\\t" \\; -exec readlink -f {} \\; | awk -F $'\\t' '/\\t${targetDeviceRegex}$/{print $1}'`;
@@ -35,6 +36,12 @@ export async function findDisk(): Promise<string> {
     );
   }
   return disksById[0];
+}
+
+const findDisk: typeof _findDisk = memoize(_findDisk);
+
+export async function getDisk(): Promise<string> {
+  return Deno.env.get("DISK") ?? await findDisk();
 }
 
 function longestString(strings: string[]): string {

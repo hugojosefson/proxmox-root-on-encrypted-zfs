@@ -1,12 +1,13 @@
 import { inChrootCommand } from "./chroot-basic-system-environment.ts";
 import { config } from "../config.ts";
+import { getDisk } from "../os/find-disk.ts";
 
 export const chrootGrub = inChrootCommand(`
 apt-get install -y dosfstools
 
-mkdosfs -F 32 -s 1 -n EFI ${await config.DISK()}-part2
+mkdosfs -F 32 -s 1 -n EFI ${await getDisk()}-part2
 mkdir /boot/efi
-echo /dev/disk/by-uuid/$(blkid -s UUID -o value ${await config.DISK()}-part2) \\
+echo /dev/disk/by-uuid/$(blkid -s UUID -o value ${await getDisk()}-part2) \\
    /boot/efi vfat defaults 0 0 >> /etc/fstab
 mount /boot/efi
 

@@ -5,12 +5,31 @@ import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/root.ts";
 import { existsPath } from "./common/file-commands.ts";
+import { getDisk } from "../os/find-disk.ts";
 
-export const zfsPartition2Efi = Command.custom()
-  .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
+export const zfsPartition1BiosBoot = Command.custom()
+  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([debian1PrepareInstallEnv])
   .withSkipIfAll([
-    async () => await existsPath(`${await config.DISK()}-part2`.split("/")),
+    async () => await existsPath(`${await getDisk()}-part1`.split("/")),
+  ])
+  .withRun(async () => {
+    await ensureSuccessful(ROOT, ["sync"]);
+    await ensureSuccessful(ROOT, [
+      "sgdisk",
+      "--new=1:24K:+1000K",
+      "--typecode=1:EF02",
+      await getDisk(),
+    ]);
+    await ensureSuccessful(ROOT, ["sync"]);
+    await ensureSuccessful(ROOT, ["sleep", "5"]);
+  });
+
+export const zfsPartition2Efi = Command.custom()
+  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
+  .withDependencies([debian1PrepareInstallEnv])
+  .withSkipIfAll([
+    async () => await existsPath(`${await getDisk()}-part2`.split("/")),
   ])
   .withRun(async () => {
     await ensureSuccessful(ROOT, ["sync"]);
@@ -18,17 +37,17 @@ export const zfsPartition2Efi = Command.custom()
       "sgdisk",
       "--new=2:1M:+512M",
       "--typecode=2:EF00",
-      await config.DISK(),
+      await getDisk(),
     ]);
     await ensureSuccessful(ROOT, ["sync"]);
     await ensureSuccessful(ROOT, ["sleep", "5"]);
   });
 
 export const zfsPartition3Boot = Command.custom()
-  .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
+  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([debian1PrepareInstallEnv])
   .withSkipIfAll([
-    async () => await existsPath(`${await config.DISK()}-part3`.split("/")),
+    async () => await existsPath(`${await getDisk()}-part3`.split("/")),
   ])
   .withRun(async () => {
     await ensureSuccessful(ROOT, ["sync"]);
@@ -36,17 +55,17 @@ export const zfsPartition3Boot = Command.custom()
       "sgdisk",
       "--new=3:0:+1G",
       "--typecode=3:BF01",
-      await config.DISK(),
+      await getDisk(),
     ]);
     await ensureSuccessful(ROOT, ["sync"]);
     await ensureSuccessful(ROOT, ["sleep", "5"]);
   });
 
 export const zfsPartition4Root = Command.custom()
-  .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
+  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([debian1PrepareInstallEnv])
   .withSkipIfAll([
-    async () => await existsPath(`${await config.DISK()}-part4`.split("/")),
+    async () => await existsPath(`${await getDisk()}-part4`.split("/")),
   ])
   .withRun(async () => {
     await ensureSuccessful(ROOT, ["sync"]);
@@ -54,14 +73,14 @@ export const zfsPartition4Root = Command.custom()
       "sgdisk",
       "--new=4:0:0",
       "--typecode=4:BF00",
-      await config.DISK(),
+      await getDisk(),
     ]);
     await ensureSuccessful(ROOT, ["sync"]);
     await ensureSuccessful(ROOT, ["sleep", "5"]);
   });
 
 export const zfsBootPool = Command.custom()
-  .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
+  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([zfsPartition3Boot])
   .withSkipIfAll([
     () =>
@@ -108,12 +127,12 @@ export const zfsBootPool = Command.custom()
       "-R",
       "/mnt",
       "bpool",
-      `${await config.DISK()}-part3`,
+      `${await getDisk()}-part3`,
     ]);
   });
 
 export const zfsRootPool = Command.custom()
-  .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
+  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([zfsPartition4Root])
   .withSkipIfAll([
     () =>
@@ -146,7 +165,7 @@ export const zfsRootPool = Command.custom()
       "-R",
       "/mnt",
       "rpool",
-      `${await config.DISK()}-part4`,
+      `${await getDisk()}-part4`,
     ], {
       stdin:
         `${config.DISK_ENCRYPTION_PASSWORD}\n${config.DISK_ENCRYPTION_PASSWORD}\n`,
@@ -154,7 +173,12 @@ export const zfsRootPool = Command.custom()
   });
 
 export const zfsPartitions = Command.custom()
-  .withDependencies([zfsPartition2Efi, zfsPartition3Boot, zfsPartition4Root]);
+  .withDependencies([
+    zfsPartition1BiosBoot,
+    zfsPartition2Efi,
+    zfsPartition3Boot,
+    zfsPartition4Root,
+  ]);
 
 export const debian2DiskFormatting = Command.custom().withDependencies([
   debian1PrepareInstallEnv,

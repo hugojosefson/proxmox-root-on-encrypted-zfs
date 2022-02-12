@@ -1,13 +1,13 @@
 import { Command } from "../model/command.ts";
-import { config } from "../config.ts";
 import { ensureSuccessful, ensureSuccessfulStdOut } from "../os/exec.ts";
 import { InstallOsPackage } from "./common/os-package.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/root.ts";
 import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
+import { getDisk } from "../os/find-disk.ts";
 
 export const destroyAllPoolsAndDisks = Command.custom()
-  .withLocks([FileSystemPath.of(ROOT, await config.DISK())])
+  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([
     debian1PrepareInstallEnv,
     InstallOsPackage.of("gdisk"),
@@ -42,7 +42,7 @@ rmdir /mnt/* || true
         "mdadm",
         "--zero-superblock",
         "--force",
-        await config.DISK(),
+        await getDisk(),
       ]);
     }
     const pools =
@@ -54,6 +54,6 @@ rmdir /mnt/* || true
       ),
     );
 
-    await ensureSuccessful(ROOT, ["wipefs", "--all", await config.DISK()]);
-    await ensureSuccessful(ROOT, ["sgdisk", "--zap-all", await config.DISK()]);
+    await ensureSuccessful(ROOT, ["wipefs", "--all", await getDisk()]);
+    await ensureSuccessful(ROOT, ["sgdisk", "--zap-all", await getDisk()]);
   });
