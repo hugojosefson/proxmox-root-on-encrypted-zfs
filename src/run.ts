@@ -1,6 +1,5 @@
 import { NOOP } from "./commands/common/noop.ts";
-import { config } from "./config.ts";
-import { compose, toposort } from "./deps.ts";
+import { toposort } from "./deps.ts";
 import { Command, CommandResult } from "./model/command.ts";
 import { Lock } from "./model/dependency.ts";
 
@@ -39,45 +38,12 @@ const forLog = (depth: number) =>
       : {};
   };
 
-// deno-lint-ignore no-explicit-any
-const stringify = (o?: any): string => JSON.stringify(o, null, 2);
-// deno-lint-ignore no-explicit-any
-const stringifyLine = (o: any): string => JSON.stringify(o);
-
 export const sortCommands = (commands: Command[]): Command[] => {
   const dependencyPairs: [Command, Command][] = commands.flatMap(
     getDependencyPairs,
   );
 
   const commandsInOrder: Command[] = toposort(dependencyPairs);
-
-  config.VERBOSE && console.error(
-    "=====================================================================================\n\ncommands:\n" +
-      commands.map(compose(stringify, forLog(1))).join("\n") +
-      "\n\n",
-  );
-
-  config.VERBOSE && console.error(
-    "=====================================================================================\n\dependencyPairs:\n" +
-      dependencyPairs.map((pair) => pair.map(compose(stringifyLine, forLog(0))))
-        .join("\n") +
-      "\n\n",
-  );
-
-  config.VERBOSE && console.error(
-    "=====================================================================================\n\commandsInOrder:\n" +
-      commandsInOrder.map(
-        compose(
-          stringifyLine,
-          (c: CommandForLog) => {
-            delete c.dependencies;
-            return c;
-          },
-          forLog(1),
-        ),
-      ).join("\n") +
-      "\n\n",
-  );
   return commandsInOrder;
 };
 
