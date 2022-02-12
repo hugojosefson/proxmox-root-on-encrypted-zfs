@@ -70,7 +70,7 @@ export class Command {
     if (await this.shouldSkip()) {
       const runResult: CommandResult = {
         status: { success: true, code: 0 },
-        stdout: `${this.name} already done.`,
+        stdout: `Already done: ${JSON.stringify(this)}`,
         stderr: "",
       } as const;
       this.doneDeferred.resolve(runResult);
@@ -91,7 +91,8 @@ export class Command {
       const innerResult: RunResult = await (this.run().catch(
         this.doneDeferred.reject,
       ));
-      config.VERBOSE && console.error(`Running command `, this, "DONE.");
+      config.VERBOSE &&
+        console.error(`Running command ${JSON.stringify(this)} DONE.`);
       return this.resolve(innerResult);
     } finally {
       lockReleasers.forEach((releaseLock) => releaseLock());
