@@ -5,4 +5,6 @@ export const ROOT: PasswdEntry = {
   gid: 0,
   username: "root",
   homedir: "/root",
+  toJSON: () => `ROOT`,
+  toString: () => `ROOT`,
 };

@@ -6,11 +6,10 @@ import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/root.ts";
 import { existsPath } from "./common/file-commands.ts";
 import { getDisk } from "../os/find-disk.ts";
-import { destroyAllPoolsAndDisks } from "./destroy-all-pools-and-disks.ts";
 
 export const zfsPartition2Efi = Command.custom("zfsPartition2Efi")
   .withLocks([FileSystemPath.of(ROOT, await getDisk())])
-  .withDependencies([debian1PrepareInstallEnv, destroyAllPoolsAndDisks])
+  .withDependencies([debian1PrepareInstallEnv])
   .withSkipIfAll([
     async () => await existsPath(`${await getDisk()}-part2`.split("/")),
   ])
@@ -42,6 +41,11 @@ export const zfsPartition3Boot = Command.custom("zfsPartition3Boot")
     ]);
     await ensureSuccessful(ROOT, ["sync"]);
     await ensureSuccessful(ROOT, ["sleep", "5"]);
+    await ensureSuccessful(ROOT, [
+      "sh",
+      "-c",
+      `partx -v -a ${await getDisk()} || true`,
+    ]);
   });
 
 export const zfsPartition4Root = Command.custom("zfsPartition4Root")
@@ -60,6 +64,11 @@ export const zfsPartition4Root = Command.custom("zfsPartition4Root")
     ]);
     await ensureSuccessful(ROOT, ["sync"]);
     await ensureSuccessful(ROOT, ["sleep", "5"]);
+    await ensureSuccessful(ROOT, [
+      "sh",
+      "-c",
+      `partx -v -a ${await getDisk()} || true`,
+    ]);
   });
 
 export const zfsBootPool = Command.custom("zfsBootPool")

@@ -20,6 +20,8 @@ export interface PasswdEntry {
   uid: number;
   gid: number;
   homedir: string;
+  toJSON: () => any;
+  toString: () => string;
 }
 interface PasswdEntry_ {
   // deno-lint-ignore no-explicit-any : parse-passwd has no typings

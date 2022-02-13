@@ -77,29 +77,29 @@ export class Command {
   }
 
   async runWhenDependenciesAreDone(): Promise<CommandResult> {
-    const dependenciesDone = this.dependencies.map(({ done }) => done);
-    if (await this.shouldSkip()) {
-      config.VERBOSE && console.error(`Skipping command `, this.toString());
-      await Promise.all(dependenciesDone);
-      const runResult: CommandResult = {
-        status: { success: true, code: 0 },
-        stdout: `Already done: ${this.toString()}`,
-        stderr: "",
-      } as const;
-      this.doneDeferred.resolve(runResult);
-      return runResult;
-    }
-
     if (this.doneDeferred.isDone) {
       return this.done;
     }
 
+    const dependenciesDone = this.dependencies.map(({ done }) => done);
     config.VERBOSE && console.error(`Running command `, this.toString());
     const lockReleaserPromises = this.locks.map((lock) => lock.take());
     await Promise.all(dependenciesDone);
 
     const lockReleasers = await Promise.all(lockReleaserPromises);
     try {
+      if (await this.shouldSkip()) {
+        config.VERBOSE && console.error(`Skipping command `, this.toString());
+        await Promise.all(dependenciesDone);
+        const runResult: CommandResult = {
+          status: { success: true, code: 0 },
+          stdout: `Already done: ${this.toString()}`,
+          stderr: "",
+        } as const;
+        this.doneDeferred.resolve(runResult);
+        return runResult;
+      }
+
       const innerResult: RunResult = await (this.run().catch(
         this.doneDeferred.reject,
       ));
@@ -148,30 +148,21 @@ export class Command {
     return this.done;
   }
 
-  static sequential(name: string, commands: Array<Command>): Command {
-    if (commands.length === 0) {
-      return NOOP();
-    }
-    if (commands.length === 1) {
-      return commands[0];
-    }
-    const head = commands[0];
-    const tail = commands.slice(1);
-    return Command.custom(`sequential(${name}, ${head.name})`)
-      .withDependencies([...tail, ...head.dependencies])
-      .withLocks(head.locks)
-      .withRun(head.run);
-  }
-
   withDependencies(dependencies: Array<Command>): Command {
-    if (this.dependencies.length === 0) {
-      this.dependencies.push(...dependencies);
-      return this;
-    }
-    return Command.sequential(this.name, [
-      Command.custom(this.name).withDependencies(dependencies),
-      this,
-    ]);
+    // if (this.dependencies.length === 0) {
+    this.dependencies.push(...dependencies);
+    return this;
+    // }
+    // const ourDependenciesAsOne: Command = Command.custom(this.name + ".ourDependenciesAsOne").withDependencies(this.dependencies);
+    // const onlyThis: Command = Command.custom(this.name + ".onlyThis").withDependencies([this])
+    // const moreDependencies: Command = Command.custom(this.name + ".moreDependencies").withDependencies(dependencies)
+    // return ourDependenciesAsOne
+    // return new Sequential(this.name, [
+    //   Command.custom(this.name + ".dependencies").withDependencies(
+    //     dependencies,
+    //   ),
+    //   this,
+    // ]);
   }
 
   withLocks(locks: Array<Lock>): Command {
@@ -180,6 +171,11 @@ export class Command {
   }
 
   withRun(run: RunFunction): Command {
+    if (this.run !== Command.prototype.run) {
+      throw new Error(
+        `Unexpectedly trying to overwrite run method of ${this.toString()}`,
+      );
+    }
     this.run = run;
     return this;
   }
@@ -187,6 +183,22 @@ export class Command {
   withSkipIfAll(predicates: Array<Predicate>): Command {
     this.skipIfAll.push(...predicates);
     return this;
+  }
+}
+
+export class Sequential extends Command {
+  readonly commands: Command[];
+  constructor(name: string, commands: Array<Command>) {
+    super(name);
+    this.commands = commands;
+  }
+
+  async run(): Promise<RunResult> {
+    let result: RunResult | undefined;
+    for (const command of this.commands) {
+      result = await command.runWhenDependenciesAreDone();
+    }
+    return result;
   }
 }
 

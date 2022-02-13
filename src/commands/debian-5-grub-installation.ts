@@ -20,20 +20,24 @@ touch /etc/zfs/zfs-list.cache/bpool
 touch /etc/zfs/zfs-list.cache/rpool
 
 zed -F &
-while ! [ -s /etc/zfs/zfs-list.cache/bpool ]; do sleep 0.5; done;
-while ! [ -s /etc/zfs/zfs-list.cache/rpool ]; do sleep 0.5; done;
+
+echo -n Waiting for /etc/zfs/zfs-list.cache/bpool to have content...
+while ! [ -s /etc/zfs/zfs-list.cache/bpool ]; do sleep 0.5; done; echo DONE.
+
+echo -n Waiting for /etc/zfs/zfs-list.cache/rpool to have content...
+while ! [ -s /etc/zfs/zfs-list.cache/rpool ]; do sleep 0.5; done; echo DONE.
+
+echo -n Killing zed...
 while pidof zed; do
-  kill -SIGINT $(cat /run/zed.pid)
-  sleep 0.5
-  kill -SIGTERM $(cat /run/zed.pid)
-done
+  killall -SIGINT zed || true
+done; echo DONE.
 sed -E 's|/mnt/?|/|' -i /etc/zfs/zfs-list.cache/?pool
 
 `,
 )
   .withDependencies([debian4SystemConfiguration, chrootGrub])
   .withSkipIfAll([
-    debian4SystemConfiguration.shouldSkip.bind(debian4SystemConfiguration),
+    () => debian4SystemConfiguration.shouldSkip(),
     () => existsPath("/etc/zfs/zfs-list.cache/bpool".split("/")),
     () => existsPath("/etc/zfs/zfs-list.cache/rpool".split("/")),
     async () =>

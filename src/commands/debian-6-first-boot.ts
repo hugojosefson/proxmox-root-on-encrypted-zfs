@@ -1,4 +1,4 @@
-import { Command } from "../model/command.ts";
+import { Command, Sequential } from "../model/command.ts";
 import { debian5GrubInstallation } from "./debian-5-grub-installation.ts";
 import { inChrootCommand } from "./chroot-basic-system-environment.ts";
 import { ensureSuccessful } from "../os/exec.ts";
@@ -25,7 +25,7 @@ export const reboot = Command.custom("reboot").withRun(() =>
   ensureSuccessful(ROOT, ["reboot"])
 );
 
-export const debian6FirstBoot = Command.sequential("debian6FirstBoot", [
+export const debian6FirstBoot = new Sequential("debian6FirstBoot", [
   debian5GrubInstallation,
   zfsSnapshotInstallation,
   zfsUmount,

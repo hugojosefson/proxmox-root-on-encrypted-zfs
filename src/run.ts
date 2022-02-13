@@ -52,6 +52,7 @@ export async function run(commands: Command[]): Promise<CommandResult[]> {
 
   const commandResults: CommandResult[] = [];
   for (const command of sortedCommands) {
+    console.log(`\nWill enqueue: ${command.toString()}\n`);
     commandResults.push(await command.runWhenDependenciesAreDone());
   }
 

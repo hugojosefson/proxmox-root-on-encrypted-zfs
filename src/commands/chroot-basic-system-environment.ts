@@ -1,6 +1,6 @@
 import { readRelativeFile } from "../os/read-relative-file.ts";
 import { ensureSuccessful, ExecOptions } from "../os/exec.ts";
-import { Command } from "../model/command.ts";
+import { Command, Sequential } from "../model/command.ts";
 import { ROOT } from "../os/user/root.ts";
 import { hostname } from "./hostname.ts";
 import { networkInterface } from "./network-interface.ts";
@@ -13,20 +13,18 @@ function inChrootPrefix(cmds: string): string[] {
     `/usr/bin/env`,
     `bash`,
     `--login`,
+    `-euo`,
+    `pipefail`,
     `-c`,
     cmds,
   ];
 }
 
 const chrootMount = (paths: string[]) =>
-  Command.custom("chrootMount")
-    .withDependencies(paths.map((path) =>
+  new Sequential(
+    "chrootMount",
+    paths.map((path) =>
       Command.custom(path)
-        .withDependencies([
-          hostname,
-          networkInterface,
-          aptSourcesListMnt,
-        ])
         .withSkipIfAll([async () => {
           await ensureSuccessful(ROOT, [
             "sh",
@@ -36,15 +34,23 @@ const chrootMount = (paths: string[]) =>
           return true;
         }])
         .withRun(async () => {
+          const mountPath = "/mnt" + path;
+          await Deno.mkdir(mountPath, { recursive: true });
           await ensureSuccessful(ROOT, [
             "mount",
             "--make-private",
             "--rbind",
             path,
-            "/mnt" + path,
+            mountPath,
           ]);
         })
-    ));
+    ),
+  )
+    .withDependencies([
+      hostname,
+      networkInterface,
+      aptSourcesListMnt,
+    ]);
 
 export function inChrootCommand(
   name: string,
