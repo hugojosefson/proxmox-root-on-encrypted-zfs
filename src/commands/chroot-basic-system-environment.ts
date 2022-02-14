@@ -5,6 +5,7 @@ import { ROOT } from "../os/user/root.ts";
 import { hostname } from "./hostname.ts";
 import { networkInterface } from "./network-interface.ts";
 import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
+import { FileSystemPath } from "../model/dependency.ts";
 
 export function inChrootPrefix(cmds: string): string[] {
   return [
@@ -64,6 +65,9 @@ export function inChrootCommand(
         ? chrootMount(["/dev", "/proc", "/sys"])
         : chrootBasicSystemEnvironment,
     ])
+    .withLocks(
+      cmds.includes("apt") ? [FileSystemPath.of(ROOT, "/mnt/var/lib/apt")] : [],
+    )
     .withRun(async () => {
       await ensureSuccessful(ROOT, inChrootPrefix(cmds), options);
     });
@@ -73,13 +77,13 @@ export const chrootBasicSystemEnvironment = inChrootCommand(
   "chrootBasicSystemEnvironment",
   `
 ln -sf /proc/self/mounts /etc/mtab
-apt-get update
+apt update
 
 debconf-set-selections << 'EOF'
 ${await readRelativeFile("./files/debconf-selections", import.meta.url)}
 EOF
 
-apt-get install -y console-setup locales
+apt install -y console-setup locales
 dpkg-reconfigure -f noninteractive locales tzdata keyboard-configuration console-setup
 
 `,

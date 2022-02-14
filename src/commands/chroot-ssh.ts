@@ -6,14 +6,14 @@ import { ROOT } from "../os/user/root.ts";
 
 const chrootInstallOpenSshServer = inChrootCommand(
   "chrootInstallOpenSshServer",
-  "apt-get install -y openssh-server",
+  "apt install -y openssh-server",
 );
 
 const chrootWriteAuthorizedKeys = new CreateFile(
   ROOT,
   FileSystemPath.of(ROOT, "/mnt/root/.ssh/authorized_keys"),
   config.ROOT_AUTHORIZED_KEYS,
-  true,
+  false,
   MODE_SECRET_600,
 );
 

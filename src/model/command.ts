@@ -1,7 +1,7 @@
 import { config } from "../config.ts";
 import { defer, Deferred } from "../os/defer.ts";
 import { run } from "../run.ts";
-import { Lock } from "./dependency.ts";
+import { Lock, LockReleaser } from "./dependency.ts";
 
 export interface CommandResult {
   status: Deno.ProcessStatus;
@@ -99,10 +99,10 @@ export class Command {
     }
 
     config.VERBOSE && console.error(`Running command `, this.toString());
-    const lockReleaserPromises = this.locks.map((lock) => lock.take());
-    await Promise.all(dependenciesDone);
 
-    const lockReleasers = await Promise.all(lockReleaserPromises);
+    const lockReleaserPromises: Promise<LockReleaser>[] = this.locks
+      .map((lock) => lock.take());
+
     try {
       const innerResult: RunResult = await (this.run().catch(
         this.doneDeferred.reject,
@@ -111,7 +111,10 @@ export class Command {
         console.error(`Running command ${this.toString()} DONE.`);
       return this.resolve(innerResult);
     } finally {
-      lockReleasers.forEach((releaseLock) => releaseLock());
+      for (const lockReleaserPromise of lockReleaserPromises) {
+        const releaseTheLock: () => void = await lockReleaserPromise;
+        releaseTheLock();
+      }
     }
   }
 

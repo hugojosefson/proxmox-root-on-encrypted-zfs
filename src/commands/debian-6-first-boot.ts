@@ -24,5 +24,4 @@ export const zfsUmount = Command.custom("zfsUmount").withRun(async () => {
 export const debian6FirstBoot = new Sequential("debian6FirstBoot", [
   debian5GrubInstallation,
   zfsSnapshotInstallation,
-  zfsUmount,
 ]);

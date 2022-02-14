@@ -8,7 +8,7 @@ export const REFRESH_OS_PACKAGES = Command.custom("REFRESH_OS_PACKAGES")
   .withLocks([OS_PACKAGE_SYSTEM])
   .withRun(async (): Promise<RunResult> => {
     await ensureSuccessful(ROOT, [
-      "apt-get",
+      "apt",
       "update",
     ], {
       env: { DEBIAN_FRONTEND: "noninteractive" },

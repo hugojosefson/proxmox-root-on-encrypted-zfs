@@ -32,6 +32,7 @@ import { NOOP } from "./common/noop.ts";
 import {
   debian6FirstBoot,
   zfsSnapshotInstallation,
+  zfsUmount,
 } from "./debian-6-first-boot.ts";
 
 const commands: Record<string, Command> = {
@@ -56,6 +57,7 @@ const commands: Record<string, Command> = {
   zfsBootPool,
   zfsRootPool,
   zfsSnapshotInstallation,
+  zfsUmount,
   chrootBasicSystemEnvironment,
   chrootZfs,
   chrootGrub,

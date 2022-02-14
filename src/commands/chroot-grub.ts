@@ -11,7 +11,7 @@ import { FileSystemPath } from "../model/dependency.ts";
 
 const chrootGrubInstallDosfsTools = inChrootCommand(
   "chrootGrubInstallDosfsTools",
-  `apt-get install -y dosfstools`,
+  `apt install -y dosfstools`,
 )
   .withSkipIfAll([
     async () => {
@@ -73,7 +73,7 @@ const chrootGrubMountBootEfi = inChrootCommand(
 
 const chrootGrubInstallGrub = inChrootCommand(
   "chrootGrubInstallGrub",
-  `apt-get install -y grub-efi-amd64`,
+  `apt install -y grub-efi-amd64`,
 )
   .withSkipIfAll([
     async () => {
@@ -87,7 +87,7 @@ const chrootGrubInstallGrub = inChrootCommand(
 
 const chrootGrubInstallShimSigned = inChrootCommand(
   "chrootGrubInstallShimSigned",
-  `apt-get install -y shim-signed`,
+  `apt install -y shim-signed`,
 )
   .withSkipIfAll([
     async () => {
@@ -101,7 +101,7 @@ const chrootGrubInstallShimSigned = inChrootCommand(
 
 const chrootGrubRemoveOsProber = inChrootCommand(
   "chrootGrubRemoveOsProber",
-  `apt-get purge -y os-prober`,
+  `apt purge -y os-prober`,
 )
   .withSkipIfAll([
     async () => {

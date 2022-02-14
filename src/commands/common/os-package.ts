@@ -43,7 +43,7 @@ export class InstallOsPackage extends AbstractPackageCommand<OsPackageName> {
 
   async run(): Promise<RunResult> {
     await ensureSuccessful(ROOT, [
-      "apt-get",
+      "apt",
       "install",
       "-y",
       this.packageName,
@@ -61,7 +61,7 @@ export class InstallOsPackage extends AbstractPackageCommand<OsPackageName> {
     return Command.custom("upgradePackages").withLocks([OS_PACKAGE_SYSTEM])
       .withRun(() =>
         ensureSuccessful(ROOT, [
-          "apt-get",
+          "apt",
           "full-upgrade",
           "-y",
           "--purge",
@@ -87,7 +87,7 @@ export class RemoveOsPackage extends AbstractPackageCommand<OsPackageName> {
 
   async run(): Promise<RunResult> {
     await ensureSuccessful(ROOT, [
-      "apt-get",
+      "apt",
       "purge",
       "-y",
       "--auto-remove",
@@ -131,7 +131,7 @@ export class ReplaceOsPackage extends Command {
 
   async run(): Promise<RunResult> {
     await ensureSuccessful(ROOT, [
-      "apt-get",
+      "apt",
       "purge",
       "-y",
       this.removePackageName,

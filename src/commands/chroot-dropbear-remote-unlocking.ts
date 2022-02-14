@@ -1,21 +1,26 @@
 import { inChrootCommand } from "./chroot-basic-system-environment.ts";
-import { CreateFile, MODE_SECRET_600 } from "./common/file-commands.ts";
+import {
+  CreateFile,
+  LineInFile,
+  MODE_SECRET_600,
+} from "./common/file-commands.ts";
 import { ROOT } from "../os/user/root.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { config } from "../config.ts";
 
 const chrootInstallDropbear = inChrootCommand(
   "chrootInstallDropbear",
-  "apt-get install -y --no-install-recommends dropbear-initramfs",
+  "apt install -y --no-install-recommends dropbear-initramfs",
 );
 
 const chrootWriteDropbearAuthorizedKeys = new CreateFile(
   ROOT,
   FileSystemPath.of(ROOT, "/mnt/etc/dropbear-initramfs/authorized_keys"),
   config.ROOT_AUTHORIZED_KEYS,
-  true,
+  false,
   MODE_SECRET_600,
-).withDependencies([chrootInstallDropbear]);
+)
+  .withDependencies([chrootInstallDropbear]);
 
 const chrootCleanupDropbearAuthorizedKeys = inChrootCommand(
   "chrootCleanupDropbearAuthorizedKeys",
@@ -23,10 +28,13 @@ const chrootCleanupDropbearAuthorizedKeys = inChrootCommand(
 )
   .withDependencies([chrootWriteDropbearAuthorizedKeys]);
 
-const chrootWriteDropbearNetworkConfig = inChrootCommand(
-  "chrootWriteDropbearNetworkConfig",
-  "echo TODO",
-);
+const chrootWriteDropbearNetworkConfig = new LineInFile(
+  ROOT,
+  FileSystemPath.of(ROOT, "/mnt/etc/initramfs-tools/initramfs.conf"),
+  "IP=dhcp",
+)
+  .withDependencies([chrootInstallDropbear]);
+
 const chrootUpdateInitramfs = inChrootCommand(
   "chrootUpdateInitramfs",
   "update-initramfs -u -k all",
