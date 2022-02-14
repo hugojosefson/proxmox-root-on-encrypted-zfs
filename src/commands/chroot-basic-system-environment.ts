@@ -6,7 +6,7 @@ import { hostname } from "./hostname.ts";
 import { networkInterface } from "./network-interface.ts";
 import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
 
-function inChrootPrefix(cmds: string): string[] {
+export function inChrootPrefix(cmds: string): string[] {
   return [
     `chroot`,
     `/mnt`,

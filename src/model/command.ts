@@ -1,4 +1,3 @@
-import { NOOP } from "../commands/common/noop.ts";
 import { config } from "../config.ts";
 import { defer, Deferred } from "../os/defer.ts";
 import { run } from "../run.ts";
@@ -81,25 +80,30 @@ export class Command {
       return this.done;
     }
 
+    this.dependencies.forEach((dep) => dep.runWhenDependenciesAreDone());
     const dependenciesDone = this.dependencies.map(({ done }) => done);
+    await Promise.all(dependenciesDone);
+
+    if (await this.shouldSkip()) {
+      config.VERBOSE && console.error(`Skipping command `, this.toString());
+      const runResult: CommandResult = {
+        status: { success: true, code: 0 },
+        stdout: `Already done: ${this.toString()}`,
+        stderr: "",
+      } as const;
+      this.doneDeferred.resolve(runResult);
+    }
+
+    if (this.doneDeferred.isDone) {
+      return this.done;
+    }
+
     config.VERBOSE && console.error(`Running command `, this.toString());
     const lockReleaserPromises = this.locks.map((lock) => lock.take());
     await Promise.all(dependenciesDone);
 
     const lockReleasers = await Promise.all(lockReleaserPromises);
     try {
-      if (await this.shouldSkip()) {
-        config.VERBOSE && console.error(`Skipping command `, this.toString());
-        await Promise.all(dependenciesDone);
-        const runResult: CommandResult = {
-          status: { success: true, code: 0 },
-          stdout: `Already done: ${this.toString()}`,
-          stderr: "",
-        } as const;
-        this.doneDeferred.resolve(runResult);
-        return runResult;
-      }
-
       const innerResult: RunResult = await (this.run().catch(
         this.doneDeferred.reject,
       ));
@@ -149,20 +153,8 @@ export class Command {
   }
 
   withDependencies(dependencies: Array<Command>): Command {
-    // if (this.dependencies.length === 0) {
     this.dependencies.push(...dependencies);
     return this;
-    // }
-    // const ourDependenciesAsOne: Command = Command.custom(this.name + ".ourDependenciesAsOne").withDependencies(this.dependencies);
-    // const onlyThis: Command = Command.custom(this.name + ".onlyThis").withDependencies([this])
-    // const moreDependencies: Command = Command.custom(this.name + ".moreDependencies").withDependencies(dependencies)
-    // return ourDependenciesAsOne
-    // return new Sequential(this.name, [
-    //   Command.custom(this.name + ".dependencies").withDependencies(
-    //     dependencies,
-    //   ),
-    //   this,
-    // ]);
   }
 
   withLocks(locks: Array<Lock>): Command {
@@ -196,6 +188,7 @@ export class Sequential extends Command {
   async run(): Promise<RunResult> {
     let result: RunResult | undefined;
     for (const command of this.commands) {
+      console.error(`${this.name}: Running sequentially ${command.toString()}`);
       result = await command.runWhenDependenciesAreDone();
     }
     return result;

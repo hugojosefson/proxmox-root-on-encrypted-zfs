@@ -15,7 +15,7 @@ sed -E 's/^#GRUB_TERMINAL=console$/GRUB_TERMINAL=console/g' -i /etc/default/grub
 update-grub
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=debian --recheck --no-floppy || true
 
-mkdir /etc/zfs/zfs-list.cache
+mkdir -p /etc/zfs/zfs-list.cache
 touch /etc/zfs/zfs-list.cache/bpool
 touch /etc/zfs/zfs-list.cache/rpool
 
@@ -29,7 +29,8 @@ while ! [ -s /etc/zfs/zfs-list.cache/rpool ]; do sleep 0.5; done; echo DONE.
 
 echo -n Killing zed...
 while pidof zed; do
-  killall -SIGINT zed || true
+  kill -SIGINT $(cat /run/zed.pid) || true
+  sleep 0.5
 done; echo DONE.
 sed -E 's|/mnt/?|/|' -i /etc/zfs/zfs-list.cache/?pool
 
