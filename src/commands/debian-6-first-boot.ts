@@ -21,13 +21,8 @@ export const zfsUmount = Command.custom("zfsUmount").withRun(async () => {
   await ensureSuccessful(ROOT, ["zpool", "export", "-a"]);
 });
 
-export const reboot = Command.custom("reboot").withRun(() =>
-  ensureSuccessful(ROOT, ["reboot"])
-);
-
 export const debian6FirstBoot = new Sequential("debian6FirstBoot", [
   debian5GrubInstallation,
   zfsSnapshotInstallation,
   zfsUmount,
-  reboot,
 ]);
