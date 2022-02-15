@@ -16,7 +16,10 @@ const chrootInstallDropbear = inChrootCommand(
 const chrootWriteDropbearAuthorizedKeys = new CreateFile(
   ROOT,
   FileSystemPath.of(ROOT, "/mnt/etc/dropbear-initramfs/authorized_keys"),
-  config.ROOT_AUTHORIZED_KEYS,
+  config.ROOT_AUTHORIZED_KEYS
+    .split("\n")
+    .map((line) => `command="/usr/bin/zfsunlock" ${line}`)
+    .join("\n"),
   false,
   MODE_SECRET_600,
 )
@@ -31,7 +34,7 @@ const chrootCleanupDropbearAuthorizedKeys = inChrootCommand(
 const chrootWriteDropbearNetworkConfig = new LineInFile(
   ROOT,
   FileSystemPath.of(ROOT, "/mnt/etc/initramfs-tools/initramfs.conf"),
-  "IP=dhcp",
+  "IP=dhcp", // TODO: config.IP; config.DROPBEAR_IP (default = config.IP)
 )
   .withDependencies([chrootInstallDropbear]);
 

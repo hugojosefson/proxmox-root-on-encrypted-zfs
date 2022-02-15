@@ -18,10 +18,29 @@ export const zfsUmount = Command.custom("zfsUmount").withRun(async () => {
     "-c",
     `mount | grep -v zfs | tac | awk '/\\/mnt/ {print $3}' | xargs -i{} umount -lf {}`,
   ]);
-  await ensureSuccessful(ROOT, ["zpool", "export", "-a"]);
+  await ensureSuccessful(ROOT, ["zpool", "export", "-fa"]);
 });
+
+export const zfsRebootInstructions = Command.custom("zfsRebootInstructions")
+  .withRun(async () => {
+    return `
+
+Debian is installed.
+
+Now, reboot.
+
+When you get to the initramfs prompt, run these two commands:
+
+  zpool import -fa
+  zpool export -fa
+
+Then reboot again, and you will be prompted for the zfs encryption key.
+`;
+  });
 
 export const debian6FirstBoot = new Sequential("debian6FirstBoot", [
   debian5GrubInstallation,
-  zfsSnapshotInstallation,
+  // zfsSnapshotInstallation,
+  // zfsUmount,
+  zfsRebootInstructions,
 ]);

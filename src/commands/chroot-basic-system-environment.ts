@@ -78,6 +78,7 @@ export const chrootBasicSystemEnvironment = inChrootCommand(
   `
 ln -sf /proc/self/mounts /etc/mtab
 apt update
+apt full-upgrade -y
 
 debconf-set-selections << 'EOF'
 ${await readRelativeFile("./files/debconf-selections", import.meta.url)}

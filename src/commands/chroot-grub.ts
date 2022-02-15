@@ -3,8 +3,8 @@ import {
   inChrootPrefix,
 } from "./chroot-basic-system-environment.ts";
 import { getDisk } from "../os/find-disk.ts";
-import { Sequential } from "../model/command.ts";
-import { ensureSuccessful } from "../os/exec.ts";
+import { Command, Sequential } from "../model/command.ts";
+import { ensureSuccessful, ensureSuccessfulStdOut } from "../os/exec.ts";
 import { ROOT } from "../os/user/root.ts";
 import { LineInFile } from "./common/file-commands.ts";
 import { FileSystemPath } from "../model/dependency.ts";
@@ -51,10 +51,20 @@ const chrootGrubMkdirBootEfi = inChrootCommand(
     },
   ]);
 
-const chrootGrubLineInFstab = new LineInFile(
-  ROOT,
-  FileSystemPath.of(ROOT, "/mnt/etc/fstab"),
-  `${await getDisk()}-part2 /boot/efi vfat defaults 0 0`,
+const chrootGrubLineInFstab = Command.custom("chrootGrubLineInFstab").withRun(
+  async (): Promise<[Command]> => {
+    const uuid = await ensureSuccessfulStdOut(ROOT, [
+      ..."blkid -s UUID -o value".split(" "),
+      await getDisk() + "-part2",
+    ]);
+    return [
+      new LineInFile(
+        ROOT,
+        FileSystemPath.of(ROOT, "/mnt/etc/fstab"),
+        `/dev/disk/by-uuid/${uuid} /boot/efi vfat defaults 0 0`,
+      ),
+    ];
+  },
 );
 
 const chrootGrubMountBootEfi = inChrootCommand(

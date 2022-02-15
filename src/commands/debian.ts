@@ -8,8 +8,4 @@ export const debian = Command.custom("debian")
     debian5GrubInstallation,
     debian8DisableLogCompression,
     debian6FirstBoot,
-  ])
-  .withRun(() => {
-    console.log(`Debian is now installed. You may reboot.`);
-    return Promise.resolve();
-  });
+  ]);

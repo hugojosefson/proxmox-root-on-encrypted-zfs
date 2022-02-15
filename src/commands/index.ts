@@ -31,6 +31,7 @@ import { debian5GrubInstallation } from "./debian-5-grub-installation.ts";
 import { NOOP } from "./common/noop.ts";
 import {
   debian6FirstBoot,
+  zfsRebootInstructions,
   zfsSnapshotInstallation,
   zfsUmount,
 } from "./debian-6-first-boot.ts";
@@ -57,6 +58,7 @@ const commands: Record<string, Command> = {
   zfsBootPool,
   zfsRootPool,
   zfsSnapshotInstallation,
+  zfsRebootInstructions,
   zfsUmount,
   chrootBasicSystemEnvironment,
   chrootZfs,

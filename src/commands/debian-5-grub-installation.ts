@@ -6,14 +6,16 @@ import { chrootGrub } from "./chroot-grub.ts";
 export const debian5GrubInstallation = inChrootCommand(
   "debian5GrubInstallation",
   `
-grub-probe /boot/efi
+grub-probe /boot
+
+update-initramfs -c -k all
 
 sed -E 's/^GRUB_CMDLINE_LINUX_DEFAULT="quiet"$/GRUB_CMDLINE_LINUX_DEFAULT=""/g' -i /etc/default/grub
 sed -E 's/^GRUB_CMDLINE_LINUX=""$/GRUB_CMDLINE_LINUX="root=ZFS=rpool\\/ROOT\\/debian"/g' -i /etc/default/grub
 sed -E 's/^#GRUB_TERMINAL=console$/GRUB_TERMINAL=console/g' -i /etc/default/grub
 
 update-grub
-grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=debian --recheck --no-floppy || true
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=debian --recheck --no-floppy
 
 mkdir -p /etc/zfs/zfs-list.cache
 touch /etc/zfs/zfs-list.cache/bpool
