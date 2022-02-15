@@ -10,7 +10,7 @@ export type Config = {
 };
 
 export const config: Config = {
-  VERBOSE: Deno.env.get("VERBOSE") !== "false",
+  VERBOSE: Deno.env.get("VERBOSE") === "true",
   DISK_ENCRYPTION_PASSWORD: await requireEnv("DISK_ENCRYPTION_PASSWORD"),
   ROOT_PASSWORD: await requireEnv("ROOT_PASSWORD"),
   ROOT_AUTHORIZED_KEYS: await requireEnv("ROOT_AUTHORIZED_KEYS"),
