@@ -48,7 +48,6 @@ Destroy and delete all pools and disks + reboot:
 curl -fsSL http://dev-server:3000/src/cli.ts \
 | sudo DISK_ENCRYPTION_PASSWORD=asdasdasd \
        ROOT_PASSWORD=rootpass \
-       HOSTNAME=proxymix \
        FQDN=proxymix.example.com \
        ROOT_AUTHORIZED_KEYS_URL=https://github.com/hugojosefson.keys \
        sh -s -- destroy-all-pools-and-disks \
@@ -62,7 +61,6 @@ Install Debian:
 curl -fsSL http://dev-server:3000/src/cli.ts \
 | sudo DISK_ENCRYPTION_PASSWORD=asdasdasd \
        ROOT_PASSWORD=rootpass \
-       HOSTNAME=proxymix \
        FQDN=proxymix.example.com \
        ROOT_AUTHORIZED_KEYS_URL=https://github.com/hugojosefson.keys \
        VERBOSE=true \

@@ -9,12 +9,12 @@ import { netmask } from "../deps.ts";
 export const etcHostname = new CreateFile(
   ROOT,
   FileSystemPath.of(ROOT, "/mnt/etc/hostname"),
-  config.HOSTNAME,
+  config.FQDN.split('.')[0],
 )
   .withDependencies([debian3SystemInstallation]);
 
 function getHostnames() {
-  return [config.FQDN, config.HOSTNAME]
+  return [config.FQDN, config.FQDN.split('.')[0]]
     .filter((s) => typeof s === "string" && s.length > 0)
     .join(" ");
 }
