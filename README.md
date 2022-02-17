@@ -27,7 +27,7 @@ Only do the first item in the list (open the terminal).
 > **Tip!**
 >
 > The `debian-live-11.*-amd64-standard.iso` boots faster, and drops you
-> immediately into a terminal! Download it from the same place as other ISO:
+> immediately into a terminal! Download it from the same place as the other ISO:
 >
 > [https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/](https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/)
 >
