@@ -100,6 +100,7 @@ import { Netmask as Netmask_ } from "https://cdn.skypack.dev/pin/netmask@v2.0.2-
 export interface Netmask {
   ip: string;
   base: string;
+  bitmask: number;
   mask: string;
   broadcast: string;
   gateway: string;

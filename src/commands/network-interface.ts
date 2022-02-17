@@ -15,14 +15,17 @@ export const networkInterface = Command.custom("networkInterface")
       ROOT,
       `/mnt/etc/network/interfaces`,
     );
-    const contents = config.IP === "dhcp"
+    const contents = `
+auto lo
+iface lo inet loopback
+
+    ` + config.IP === "dhcp"
       ? `auto ${device}
 iface ${device} inet dhcp`
       : `auto ${device}
 iface ${device} inet static
-address ${netmask(config.IP).ip}
-netmask ${netmask(config.IP).mask}
-gateway ${netmask(config.IP).gateway}
+        address ${netmask(config.IP).ip}/${netmask(config.IP).bitmask}
+        gateway ${netmask(config.IP).gateway}
 `;
     return [
       new CreateFile(ROOT, interfacePath, contents).withDependencies([
