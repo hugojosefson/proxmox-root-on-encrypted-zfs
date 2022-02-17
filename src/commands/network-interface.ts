@@ -13,7 +13,7 @@ export const networkInterface = Command.custom("networkInterface")
     const device = await findNetworkDevice();
     const interfacePath = FileSystemPath.of(
       ROOT,
-      `/mnt/etc/network/interfaces.d/${device}`,
+      `/mnt/etc/network/interfaces`,
     );
     const contents = config.IP === "dhcp"
       ? `auto ${device}

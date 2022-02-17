@@ -14,6 +14,7 @@ import { chrootSsh } from "./chroot-ssh.ts";
 import { chrootDropbearRemoteUnlocking } from "./chroot-dropbear-remote-unlocking.ts";
 import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
 import { getDisk } from "../os/find-disk.ts";
+import { chrootProxmox } from "./chroot-proxmox.ts";
 
 export const debian4SystemConfiguration = Command.custom(
   "debian4SystemConfiguration",
@@ -24,6 +25,7 @@ export const debian4SystemConfiguration = Command.custom(
     hostname,
     networkInterface,
     aptSourcesListMnt,
+    chrootProxmox,
     chrootBasicSystemEnvironment,
     chrootZfs,
     chrootGrub,
