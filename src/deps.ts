@@ -91,3 +91,27 @@ export function kebabCase(s: string): string {
     .replace(/([a-z])([0-9])/, "$1-$2") // Insert '-' between 'all' and the number.
     .replace(/\bv-4l/, "v4l"); // fix v4l (video for linux)
 }
+
+/** https://raw.githubusercontent.com/geongeorge/i-hate-regex/a8e8aec729390ae14ff7d6a774e4b4899bf56821/static/regex/data.json */
+export const ipRegex =
+  "(\\b25[0-5]|\\b2[0-4][0-9]|\\b[01]?[0-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}";
+
+import { Netmask as Netmask_ } from "https://cdn.skypack.dev/pin/netmask@v2.0.2-NDKHaKcpQNNH2W79Bihb/mode=imports/optimized/netmask.js";
+export interface Netmask {
+  ip: string;
+  base: string;
+  mask: string;
+  broadcast: string;
+  gateway: string;
+  // and more
+}
+export function netmask(cidr: string): Netmask {
+  const parts = cidr.split("/");
+  const [ip, _bitmask, gateway] = parts;
+  const net = new Netmask_(cidr);
+  return {
+    ...net,
+    ip,
+    gateway: gateway ?? net.first,
+  };
+}
