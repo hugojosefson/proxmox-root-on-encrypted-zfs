@@ -15,11 +15,12 @@ export const networkInterface = Command.custom("networkInterface")
       ROOT,
       `/mnt/etc/network/interfaces`,
     );
-    const contents = `
+    const loopback = `
 auto lo
 iface lo inet loopback
 
-    ` + config.IP === "dhcp"
+    `;
+    const nic = config.IP === "dhcp"
       ? `auto ${device}
 iface ${device} inet dhcp`
       : `auto ${device}
@@ -27,6 +28,7 @@ iface ${device} inet static
         address ${netmask(config.IP).ip}/${netmask(config.IP).bitmask}
         gateway ${netmask(config.IP).gateway}
 `;
+    const contents = loopback + nic;
     return [
       new CreateFile(ROOT, interfacePath, contents).withDependencies([
         debian3SystemInstallation,

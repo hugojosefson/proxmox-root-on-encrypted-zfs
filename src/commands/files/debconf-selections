@@ -15,3 +15,7 @@ locales	locales/default_environment_locale	select	en_US.UTF-8
 locales	locales/locales_to_be_generated	multiselect	en_US.UTF-8 UTF-8
 
 zfs-dkms        zfs-dkms/note-incompatible-licenses     note
+
+postfix	postfix/main_mailer_type	select	Local only
+postfix	postfix/destinations	string	@@FQDN@@, $myhostname, localhost
+postfix	postfix/mailname	string	@@FQDN@@

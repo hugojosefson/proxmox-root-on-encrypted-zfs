@@ -6,6 +6,7 @@ import { hostname } from "./hostname.ts";
 import { networkInterface } from "./network-interface.ts";
 import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
 import { FileSystemPath } from "../model/dependency.ts";
+import { config } from "../config.ts";
 
 export function inChrootPrefix(cmds: string): string[] {
   return [
@@ -81,7 +82,10 @@ apt update
 apt full-upgrade -y
 
 debconf-set-selections << 'EOF'
-${await readRelativeFile("./files/debconf-selections", import.meta.url)}
+${
+    (await readRelativeFile("./files/debconf-selections", import.meta.url))
+      .replace(/@@FQFN@@/g, config.FQDN)
+  }
 EOF
 
 apt install -y console-setup locales

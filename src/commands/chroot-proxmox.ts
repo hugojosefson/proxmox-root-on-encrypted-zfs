@@ -1,8 +1,10 @@
 import { inChrootCommand } from "./chroot-basic-system-environment.ts";
 import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
+import { Sequential } from "../model/command.ts";
+import { zfsRebootInstructions } from "./debian-6-first-boot.ts";
 
-export const chrootProxmox = inChrootCommand(
-  "chrootProxmox",
+const chrootProxmoxPrepare = inChrootCommand(
+  "chrootProxmoxPrepare",
   `
 apt install -y wget
 echo "deb [arch=amd64] http://download.proxmox.com/debian/pve bullseye pve-no-subscription" > /etc/apt/sources.list.d/pve-install-repo.list
@@ -13,6 +15,12 @@ echo '7fb03ec8a1675723d2853b84aa4fdb49a46a3bb72b9951361488bfd19b29aab0a789a4f8c7
 
 apt update
 apt full-upgrade -y
-apt install -y proxmox-ve postfix open-iscsi
+apt install -y open-iscsi postfix # proxmox-ve
 `,
-).withDependencies([aptSourcesListMnt]);
+);
+
+export const chrootProxmox = new Sequential("chrootProxmox", [
+  chrootProxmoxPrepare,
+  zfsRebootInstructions,
+])
+  .withDependencies([aptSourcesListMnt]);
