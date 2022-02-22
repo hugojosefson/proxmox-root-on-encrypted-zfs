@@ -83,7 +83,7 @@ sudo chroot /mnt /usr/bin/env bash --login
 
 ## Opinionated: Specifics
 
-This is how this installer is more specific and/or different, compared to the guides linked above:
+This is how this installer is more specific and/or different, compared to the guides linked above.
 
 ### Debian
 
