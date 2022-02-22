@@ -84,7 +84,7 @@ apt full-upgrade -y
 debconf-set-selections << 'EOF'
 ${
     (await readRelativeFile("./files/debconf-selections", import.meta.url))
-      .replace(/@@FQFN@@/g, config.FQDN)
+      .replace(/@@FQDN@@/g, config.FQDN)
   }
 EOF
 
