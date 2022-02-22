@@ -91,7 +91,7 @@ This is how this installer is more specific and/or different, compared to the gu
 
 1.
 2. Use [src/commands/files/etc/apt/sources.list](src/commands/files/etc/apt/sources.list).
-3. Skip installing `openssh-server` during in live boot environment during installation.
+3. Skip installing `openssh-server` in live boot environment during installation.
 
 #### Step 2: Disk Formatting
 
