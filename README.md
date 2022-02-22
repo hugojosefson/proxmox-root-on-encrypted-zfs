@@ -26,12 +26,13 @@ Only do the first item in the list (open the terminal).
 
 > **Tip!**
 >
-> The `debian-live-11.*-amd64-standard.iso` boots faster, and drops you
-> immediately into a terminal! Download it from the same place as the other ISO:
+> If you want to boot much faster, and get dropped into a shell immediately,
+> you may want to use `debian-live-11.*-amd64-standard.iso`! Download it from
+> the same place as the other ISO:
 >
 > [https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/](https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/)
 >
-> Log in as `user`, with password `live`.
+> Log in as `user`, with password `live`, if asked.
 
 Instead of editing files etc. manually, launch this automated script from the
 terminal:
@@ -39,6 +40,9 @@ terminal:
 ```bash
 curl -fsSL http://dev-server:3000/src/cli.ts | sudo sh -s --
 ```
+
+> Note: You may suffix any environment variable with `_FILE` or `_URL` to load
+> its contents from that file or url, respectively.
 
 ### More detailed full examples
 
