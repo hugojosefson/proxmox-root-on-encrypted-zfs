@@ -97,9 +97,9 @@ This is how this installer is more specific and/or different, compared to the gu
 
 1. Use environment variable `DISK` to specify which disk to use. If you only have one disk connected, it can be auto-detected.
 2. Optionally clear any existing ZFS pools and disks with the command `destroy-all-pools-and-disks`. Make sure nothing is connected that you wish to keep!
-3. ZFS native encryption. No LUKS.
-4.
-5. `zstd` compression for the root pool. ZFS native encryption. No LUKS.
+3. ZFS native encryption. No LUKS. No mirror. (TODO: Yes, mirror!)
+4. No mirror. (TODO: Yes, mirror!)
+5. `zstd` compression for the root pool. ZFS native encryption. No LUKS. No mirror. (TODO: Yes, mirror!)
 
 #### Step 3: System Installation
 
@@ -143,7 +143,7 @@ This is how this installer is more specific and/or different, compared to the gu
 4. Rebooting and re-running the installer, usually works to resolve any partition or pool mounting/unmounting issues.
 5.
 6. Create no extra user account.
-7. No mirror. (TODO: Yes, mirror!) No BIOS, only UEFI booting.
+7. No BIOS, only UEFI booting. No mirror. (TODO: Yes, mirror!)
 
 #### Step 7: Optional: Configure Swap
 
@@ -157,6 +157,8 @@ No swap.
 4. No need to reboot here. Move on to installing Proxmox VE.
 
 #### Step 9: Final Cleanup
+
+Skip the rest;
 
 1. We're not rebooting, and only `root` exists.
 2. No snapshots to delete.
