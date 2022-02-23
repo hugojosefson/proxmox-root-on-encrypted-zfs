@@ -2,6 +2,8 @@ import { config } from "../config.ts";
 import { defer, Deferred } from "../os/defer.ts";
 import { run } from "../run.ts";
 import { Lock, LockReleaser } from "./dependency.ts";
+import { Ish, resolveValue, resolveValues } from "../fn.ts";
+import { Stringifiable } from "./stringifiable.ts";
 
 export interface CommandResult {
   status: Deno.ProcessStatus;
@@ -9,11 +11,11 @@ export interface CommandResult {
   stderr: string;
 }
 
-export class Command {
+export class Command implements Stringifiable {
   readonly name: string;
-  readonly dependencies: Array<Command> = new Array(0);
-  readonly locks: Array<Lock> = new Array(0);
-  readonly skipIfAll: Array<Predicate> = new Array(0);
+  readonly dependencies: Array<Ish<Command>> = new Array(0);
+  readonly locks: Array<Ish<Lock>> = new Array(0);
+  readonly skipIfAll: Array<Ish<Predicate>> = new Array(0);
   readonly doneDeferred: Deferred<CommandResult> = defer();
   readonly done: Promise<CommandResult> = this.doneDeferred.promise;
 
@@ -21,21 +23,21 @@ export class Command {
     this.name = name;
   }
 
-  toJSON() {
-    return this.toString();
-  }
-
-  toString(): string {
+  async stringify(): Promise<string> {
     return [
       `Command.custom(${this.name})`,
       this.locks.length
         ? `\n    .withLocks([${
-          this.locks.map((lock) => lock.toString()).join(", ")
+          (await resolveValues(this.locks))
+            .map(async (lock) => (await lock.stringify()))
+            .join(", ")
         }])`
         : "",
       this.dependencies.length
         ? `\n    .withDependencies([${
-          this.dependencies.map((dep) => dep.name).join(", ")
+          (await resolveValues(this.dependencies))
+            .map((dep) => dep.name)
+            .join(", ")
         }])`
         : "",
       this.run !== Command.prototype.run
@@ -57,8 +59,9 @@ export class Command {
 
     try {
       await Promise.all(
-        this.skipIfAll.map(async (predicate) => {
-          if (await predicate()) {
+        this.skipIfAll.map(async (predicatish) => {
+          const predicate = await resolveValue(predicatish);
+          if (predicate()) {
             return;
           }
           throw new Error(
@@ -80,15 +83,19 @@ export class Command {
       return this.done;
     }
 
-    this.dependencies.forEach((dep) => dep.runWhenDependenciesAreDone());
-    const dependenciesDone = this.dependencies.map(({ done }) => done);
+    const dependencies: Array<Command> = await resolveValues(
+      this.dependencies,
+    );
+    dependencies.forEach((dep) => dep.runWhenDependenciesAreDone());
+    const dependenciesDone = dependencies.map(({ done }) => done);
     await Promise.all(dependenciesDone);
 
+    const verbose = (await config("VERBOSE"));
     if (await this.shouldSkip()) {
-      config.VERBOSE && console.error(`Skipping command `, this.toString());
+      verbose && console.error(`Skipping command `, await this.stringify());
       const runResult: CommandResult = {
         status: { success: true, code: 0 },
-        stdout: `Already done: ${this.toString()}`,
+        stdout: `Already done: ${await this.stringify()}`,
         stderr: "",
       } as const;
       this.doneDeferred.resolve(runResult);
@@ -98,17 +105,18 @@ export class Command {
       return this.done;
     }
 
-    config.VERBOSE && console.error(`Running command `, this.toString());
+    verbose && console.error(`Running command `, await this.stringify());
 
-    const lockReleaserPromises: Promise<LockReleaser>[] = this.locks
+    const locks: Array<Lock> = await resolveValues(this.locks);
+    const lockReleaserPromises: Promise<LockReleaser>[] = locks
       .map((lock) => lock.take());
 
     try {
       const innerResult: RunResult = await (this.run().catch(
         this.doneDeferred.reject,
       ));
-      config.VERBOSE &&
-        console.error(`Running command ${this.toString()} DONE.`);
+      verbose &&
+        console.error(`Running command ${await this.stringify()} DONE.`);
       return this.resolve(innerResult);
     } finally {
       for (const lockReleaserPromise of lockReleaserPromises) {
@@ -125,13 +133,13 @@ export class Command {
   async run(): Promise<RunResult> {
   }
 
-  resolve(
+  async resolve(
     commandResult: RunResult,
   ): Promise<CommandResult> {
     if (!commandResult) {
       this.doneDeferred.resolve({
         status: { success: true, code: 0 },
-        stdout: `Success: ${this.toString()}`,
+        stdout: `Success: ${await this.stringify()}`,
         stderr: "",
       });
       return this.done;
@@ -155,43 +163,49 @@ export class Command {
     return this.done;
   }
 
-  withDependencies(dependencies: Array<Command>): Command {
+  withDependencies(dependencies: Array<Ish<Command>>): Command {
     this.dependencies.push(...dependencies);
     return this;
   }
 
-  withLocks(locks: Array<Lock>): Command {
+  withLocks(locks: Array<Ish<Lock>>): Command {
     this.locks.push(...locks);
     return this;
   }
 
   withRun(run: RunFunction): Command {
     if (this.run !== Command.prototype.run) {
-      throw new Error(
-        `Unexpectedly trying to overwrite run method of ${this.toString()}`,
-      );
+      throw new Error(`Unexpectedly trying to overwrite run method:
+${this.run.toString()}
+
+with:
+
+${run.toString()}`);
     }
     this.run = run;
     return this;
   }
 
-  withSkipIfAll(predicates: Array<Predicate>): Command {
+  withSkipIfAll(predicates: Array<Ish<Predicate>>): Command {
     this.skipIfAll.push(...predicates);
     return this;
   }
 }
 
 export class Sequential extends Command {
-  readonly commands: Command[];
-  constructor(name: string, commands: Array<Command>) {
+  readonly commands: Ish<Command>[];
+  constructor(name: string, commands: Ish<Command>[]) {
     super(name);
     this.commands = commands;
   }
 
   async run(): Promise<RunResult> {
     let result: RunResult | undefined;
-    for (const command of this.commands) {
-      console.error(`${this.name}: Running sequentially ${command.toString()}`);
+    const commands: Array<Command> = await resolveValues(this.commands);
+    for (const command of commands) {
+      console.error(
+        `${this.name}: Running sequentially ${await command.stringify()}`,
+      );
       result = await command.runWhenDependenciesAreDone();
     }
     return result;

@@ -19,7 +19,7 @@ import { chrootProxmox } from "./chroot-proxmox.ts";
 export const debian4SystemConfiguration = Command.custom(
   "debian4SystemConfiguration",
 )
-  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
+  .withLocks([async () => FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([
     debian3SystemInstallation,
     hostname,

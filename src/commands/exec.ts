@@ -31,8 +31,8 @@ export class Exec extends Command {
     );
   }
 
-  toString(): string {
-    return `Exec(${(this.asUser.toString())}, ${this.cmd}${
+  async stringify(): Promise<string> {
+    return `Exec(${(this.asUser.stringify())}, ${this.cmd}${
       this.options ? ", " + JSON.stringify(this.options) : ""
     })`;
   }

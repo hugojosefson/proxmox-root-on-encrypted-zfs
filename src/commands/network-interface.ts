@@ -7,31 +7,34 @@ import { ROOT } from "../os/user/root.ts";
 import { config } from "../config.ts";
 import { netmask } from "../deps.ts";
 
-export const networkInterface = Command.custom("networkInterface")
-  .withDependencies([debian3SystemInstallation])
-  .withRun(async () => {
-    const device = await findNetworkDevice();
-    const interfacePath = FileSystemPath.of(
-      ROOT,
-      `/mnt/etc/network/interfaces`,
-    );
-    const loopback = `
+export function networkInterface(): Command {
+  return Command.custom("networkInterface")
+    .withDependencies([debian3SystemInstallation])
+    .withRun(async () => {
+      const device = await findNetworkDevice();
+      const interfacePath = FileSystemPath.of(
+        ROOT,
+        `/mnt/etc/network/interfaces`,
+      );
+      const loopback = `
 auto lo
 iface lo inet loopback
 
     `;
-    const nic = config.IP === "dhcp"
-      ? `auto ${device}
+      const ip = (await config("IP"));
+      const nic = ip === "dhcp"
+        ? `auto ${device}
 iface ${device} inet dhcp`
-      : `auto ${device}
+        : `auto ${device}
 iface ${device} inet static
-        address ${netmask(config.IP).ip}/${netmask(config.IP).bitmask}
-        gateway ${netmask(config.IP).gateway}
+        address ${netmask(ip).ip}/${netmask(ip).bitmask}
+        gateway ${netmask(ip).gateway}
 `;
-    const contents = loopback + nic;
-    return [
-      new CreateFile(ROOT, interfacePath, contents).withDependencies([
-        debian3SystemInstallation,
-      ]),
-    ];
-  });
+      const contents = loopback + nic;
+      return [
+        new CreateFile(ROOT, interfacePath, contents).withDependencies([
+          debian3SystemInstallation,
+        ]),
+      ];
+    });
+}

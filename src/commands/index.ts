@@ -1,5 +1,5 @@
 import { kebabCase } from "../deps.ts";
-import { toObject } from "../fn.ts";
+import { Ish, toObject } from "../fn.ts";
 import { Command } from "../model/command.ts";
 import { InstallOsPackage } from "./common/os-package.ts";
 import { vim } from "./vim.ts";
@@ -36,7 +36,7 @@ import {
   zfsUmount,
 } from "./debian-6-first-boot.ts";
 
-const commands: Record<string, Command> = {
+const commands: Record<string, Ish<Command>> = {
   debian,
   debian1PrepareInstallEnv,
   debian2DiskFormatting,
@@ -69,14 +69,14 @@ const commands: Record<string, Command> = {
   chrootSsh,
 };
 
-const kebabCommands: Record<string, Command> = Object.entries(commands)
-  .map(([key, value]) => [kebabCase(key), value] as [string, Command])
+const kebabCommands: Record<string, Ish<Command>> = Object.entries(commands)
+  .map(([key, value]) => [kebabCase(key), value] as [string, Ish<Command>])
   .reduce(
-    toObject<string, Command>(),
+    toObject<string, Ish<Command>>(),
     {},
   );
 
-export const getCommand = (name: string): Command =>
+export const getCommand = (name: string): Ish<Command> =>
   kebabCommands[name] || InstallOsPackage.of(name);
 
 export const availableCommands: Array<string> = Object.keys(kebabCommands)

@@ -3,9 +3,10 @@ import { debian4SystemConfiguration } from "./debian-4-system-configuration.ts";
 import { existsPath } from "./common/file-commands.ts";
 import { chrootGrub } from "./chroot-grub.ts";
 
-export const debian5GrubInstallation = inChrootCommand(
-  "debian5GrubInstallation",
-  `
+export function debian5GrubInstallation() {
+  return inChrootCommand(
+    "debian5GrubInstallation",
+    `
 grub-probe /boot
 
 update-initramfs -c -k all
@@ -37,26 +38,27 @@ done; echo DONE.
 sed -E 's|/mnt/?|/|' -i /etc/zfs/zfs-list.cache/?pool
 
 `,
-)
-  .withDependencies([debian4SystemConfiguration, chrootGrub])
-  .withSkipIfAll([
-    () => debian4SystemConfiguration.shouldSkip(),
-    () => existsPath("/etc/zfs/zfs-list.cache/bpool".split("/")),
-    () => existsPath("/etc/zfs/zfs-list.cache/rpool".split("/")),
-    async () =>
-      (await Deno.readTextFile("/etc/zfs/zfs-list.cache/bpool")).includes(
-        "/etc/zfs/zfs-list.cache",
-      ),
-    async () =>
-      (await Deno.readTextFile("/etc/zfs/zfs-list.cache/rpool")).includes(
-        "/etc/zfs/zfs-list.cache",
-      ),
-    async () =>
-      !(await Deno.readTextFile("/etc/zfs/zfs-list.cache/bpool")).includes(
-        "/mnt/",
-      ),
-    async () =>
-      !(await Deno.readTextFile("/etc/zfs/zfs-list.cache/rpool")).includes(
-        "/mnt/",
-      ),
-  ]);
+  )
+    .withDependencies([debian4SystemConfiguration, chrootGrub])
+    .withSkipIfAll([
+      () => debian4SystemConfiguration.shouldSkip(),
+      () => existsPath("/etc/zfs/zfs-list.cache/bpool".split("/")),
+      () => existsPath("/etc/zfs/zfs-list.cache/rpool".split("/")),
+      async () =>
+        (await Deno.readTextFile("/etc/zfs/zfs-list.cache/bpool")).includes(
+          "/etc/zfs/zfs-list.cache",
+        ),
+      async () =>
+        (await Deno.readTextFile("/etc/zfs/zfs-list.cache/rpool")).includes(
+          "/etc/zfs/zfs-list.cache",
+        ),
+      async () =>
+        !(await Deno.readTextFile("/etc/zfs/zfs-list.cache/bpool")).includes(
+          "/mnt/",
+        ),
+      async () =>
+        !(await Deno.readTextFile("/etc/zfs/zfs-list.cache/rpool")).includes(
+          "/mnt/",
+        ),
+    ]);
+}

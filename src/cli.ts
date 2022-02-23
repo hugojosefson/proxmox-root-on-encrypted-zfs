@@ -10,6 +10,7 @@ import { RejectFn } from "./os/defer.ts";
 import { isRunningAsRoot } from "./os/user/is-running-as-root.ts";
 import { run } from "./run.ts";
 import { errorAndExit, usageAndExit } from "./usage.ts";
+import { mapAsync } from "./fn.ts";
 
 export const cli = async () => {
   if (!await isRunningAsRoot()) {
@@ -24,7 +25,7 @@ export const cli = async () => {
     await usageAndExit();
   }
 
-  const commands: Command[] = await Promise.all(args.map(getCommand));
+  const commands: Command[] = await mapAsync(getCommand, args);
   const runCommandsPromise = run(commands);
   await runCommandsPromise.then(
     (results: Array<CommandResult>) => {
@@ -45,23 +46,20 @@ export const cli = async () => {
       }
     },
     // deno-lint-ignore no-explicit-any : because Promise defines it as ?any
-    (err?: any): RejectFn => {
-      if (config.VERBOSE) {
-        if (err?.message) {
-          console.error("err.message: " + colorlog.error(err.message));
-        }
-        if (err?.stack) {
-          console.error("err.stack: " + colorlog.warning(err.stack));
-        }
-        if (err?.stdout) {
-          console.error("err.stdout: " + colorlog.success(err.stdout));
-        }
-        if (err?.stderr) {
-          console.error("err.stderr: " + colorlog.error(err.stderr));
-        }
-
-        console.error("err: " + colorlog.error(JSON.stringify(err, null, 2)));
+    (err?: any): Promise<RejectFn> => {
+      if (err?.message) {
+        console.error("err.message: " + colorlog.error(err.message));
       }
+      if (err?.stack) {
+        console.error("err.stack: " + colorlog.warning(err.stack));
+      }
+      if (err?.stdout) {
+        console.error("err.stdout: " + colorlog.success(err.stdout));
+      }
+      if (err?.stderr) {
+        console.error("err.stderr: " + colorlog.error(err.stderr));
+      }
+      console.error("err: " + colorlog.error(JSON.stringify(err, null, 2)));
       const code: number = err?.status?.code || err?.code || 1;
       Deno.exit(code);
     },

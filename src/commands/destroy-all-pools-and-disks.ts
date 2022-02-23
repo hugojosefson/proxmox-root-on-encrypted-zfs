@@ -7,7 +7,7 @@ import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
 import { getDisk } from "../os/find-disk.ts";
 
 export const destroyAllPoolsAndDisks = Command.custom("destroyAllPoolsAndDisks")
-  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
+  .withLocks([async () => FileSystemPath.of(ROOT, await getDisk())])
   .withDependencies([
     debian1PrepareInstallEnv,
     InstallOsPackage.of("gdisk"),

@@ -7,24 +7,26 @@ import {
 import { ROOT } from "../os/user/root.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { config } from "../config.ts";
-import { ipRegex, type Netmask, netmask } from "../deps.ts";
+import { ipRegex, netmask } from "../deps.ts";
 
 const chrootInstallDropbear = inChrootCommand(
   "chrootInstallDropbear",
   "apt install -y --no-install-recommends dropbear-initramfs",
 );
 
-const chrootWriteDropbearAuthorizedKeys = new CreateFile(
-  ROOT,
-  FileSystemPath.of(ROOT, "/mnt/etc/dropbear-initramfs/authorized_keys"),
-  config.ROOT_AUTHORIZED_KEYS
-    .split("\n")
-    .map((line) => `command="/usr/bin/zfsunlock" ${line}`)
-    .join("\n"),
-  false,
-  MODE_SECRET_600,
-)
-  .withDependencies([chrootInstallDropbear]);
+async function chrootWriteDropbearAuthorizedKeys() {
+  return new CreateFile(
+    ROOT,
+    FileSystemPath.of(ROOT, "/mnt/etc/dropbear-initramfs/authorized_keys"),
+    (await config("ROOT_AUTHORIZED_KEYS"))
+      .split("\n")
+      .map((line) => `command="/usr/bin/zfsunlock" ${line}`)
+      .join("\n"),
+    false,
+    MODE_SECRET_600,
+  )
+    .withDependencies([chrootInstallDropbear]);
+}
 
 const chrootCleanupDropbearAuthorizedKeys = inChrootCommand(
   "chrootCleanupDropbearAuthorizedKeys",
@@ -56,12 +58,14 @@ function initramfsIpLine(input: string): string {
   }
 }
 
-const chrootWriteDropbearNetworkConfig = new LineInFile(
-  ROOT,
-  FileSystemPath.of(ROOT, "/mnt/etc/initramfs-tools/initramfs.conf"),
-  initramfsIpLine(config.INITRAMFS_IP),
-)
-  .withDependencies([chrootInstallDropbear]);
+async function chrootWriteDropbearNetworkConfig() {
+  return new LineInFile(
+    ROOT,
+    FileSystemPath.of(ROOT, "/mnt/etc/initramfs-tools/initramfs.conf"),
+    initramfsIpLine(await config("INITRAMFS_IP")),
+  )
+    .withDependencies([chrootInstallDropbear]);
+}
 
 const chrootUpdateInitramfs = inChrootCommand(
   "chrootUpdateInitramfs",

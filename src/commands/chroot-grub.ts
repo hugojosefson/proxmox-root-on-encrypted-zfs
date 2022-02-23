@@ -23,19 +23,21 @@ const chrootGrubInstallDosfsTools = inChrootCommand(
     },
   ]);
 
-const chrootGrubMkfsEfiPart2 = inChrootCommand(
-  "chrootGrubMkfsEfiPart2",
-  `mkdosfs -F 32 -s 1 -n EFI ${await getDisk()}-part2`,
-)
-  .withSkipIfAll([
-    async () => {
-      await ensureSuccessful(
-        ROOT,
-        inChrootPrefix(`file -sL ${await getDisk()}-part2 | grep EFI`),
-      );
-      return true;
-    },
-  ]);
+async function chrootGrubMkfsEfiPart2() {
+  return inChrootCommand(
+    "chrootGrubMkfsEfiPart2",
+    `mkdosfs -F 32 -s 1 -n EFI ${await getDisk()}-part2`,
+  )
+    .withSkipIfAll([
+      async () => {
+        await ensureSuccessful(
+          ROOT,
+          inChrootPrefix(`file -sL ${await getDisk()}-part2 | grep EFI`),
+        );
+        return true;
+      },
+    ]);
+}
 
 const chrootGrubMkdirBootEfi = inChrootCommand(
   "chrootGrubMkdirBootEfi",

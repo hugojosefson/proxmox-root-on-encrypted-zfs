@@ -12,7 +12,8 @@ This is a more automated way of following these guides:
 
 ## Opinionated
 
-For details and choices made, see [Opinionated: Specifics](#opinionated-specifics) below.
+For details and choices made, see
+[Opinionated: Specifics](#opinionated-specifics) below.
 
 ## Requirements
 
@@ -30,9 +31,9 @@ Only do the first item in the list (open the terminal).
 
 > **Tip!**
 >
-> If you want to boot much faster, and get dropped into a shell immediately,
-> you may want to use `debian-live-11.*-amd64-standard.iso`! Download it from
-> the same place as the other ISO:
+> If you want to boot much faster, and get dropped into a shell immediately, you
+> may want to use `debian-live-11.*-amd64-standard.iso`! Download it from the
+> same place as the other ISO:
 >
 > [https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/](https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/)
 >
@@ -83,29 +84,38 @@ sudo chroot /mnt /usr/bin/env bash --login
 
 ## Opinionated: Specifics
 
-This is how this installer is more specific and/or different, compared to the guides linked above.
+This is how this installer is more specific and/or different, compared to the
+guides linked above.
 
 ### Debian
 
 #### Step 1: Prepare The Install Environment
 
 1.
-2. Use [src/commands/files/etc/apt/sources.list](src/commands/files/etc/apt/sources.list).
-3. Skip installing `openssh-server` in live boot environment during installation.
+2. Use
+   [src/commands/files/etc/apt/sources.list](src/commands/files/etc/apt/sources.list).
+3. Skip installing `openssh-server` in live boot environment during
+   installation.
 
 #### Step 2: Disk Formatting
 
-1. Use environment variable `DISK` to specify which disk to use. If you only have one disk connected, it can be auto-detected.
-2. Optionally clear any existing ZFS pools and disks with the command `destroy-all-pools-and-disks`. Make sure nothing is connected that you wish to keep!
+1. Use environment variable `DISK` to specify which disk to use. If you only
+   have one disk connected, it can be auto-detected.
+2. Optionally clear any existing ZFS pools and disks with the command
+   `destroy-all-pools-and-disks`. Make sure nothing is connected that you wish
+   to keep!
 3. ZFS native encryption. No LUKS. No mirror. (TODO: Yes, mirror!)
 4. No mirror. (TODO: Yes, mirror!)
-5. `zstd` compression for the root pool. ZFS native encryption. No LUKS. No mirror. (TODO: Yes, mirror!)
+5. `zstd` compression for the root pool. ZFS native encryption. No LUKS. No
+   mirror. (TODO: Yes, mirror!)
 
 #### Step 3: System Installation
 
 1.
 2.
-3. Skip separate dataset for `rpool/var/{games,mail,snap,www,lib/AccountsService}`, `rpool/tmp`. Set up tmpfs later.
+3. Skip separate dataset for
+   `rpool/var/{games,mail,snap,www,lib/AccountsService}`, `rpool/tmp`. Set up
+   tmpfs later.
 
 #### Step 4: System Configuration
 
@@ -113,7 +123,8 @@ This is how this installer is more specific and/or different, compared to the gu
 2. Configure network via environment variable `IP`.
 3. Comment out `deb-src` lines.
 4.
-5. Pre-answer install questions with contents of [src/commands/files/debconf-selections](src/commands/files/debconf-selections).
+5. Pre-answer install questions with contents of
+   [src/commands/files/debconf-selections](src/commands/files/debconf-selections).
 6.
 7. No LUKS.
 8. Only install GRUB for UEFI, not for legacy (BIOS) booting.
@@ -121,8 +132,13 @@ This is how this installer is more specific and/or different, compared to the gu
 10. Set `root` password via environment variable `ROOT_PASSWORD`.
 11.
 12. Mount a tmpfs to `/tmp`.
-13. No `PermitRootLogin yes`, but leave `/etc/ssh/sshd_config` default configured as `PermitRootLogin prohibit-password`. Pre-populate `/root/.ssh/authorized_keys` from environment variable `ROOT_AUTHORIZED_KEYS`.
-14. Install Dropbear for remote unlocking, but let it generate its own server keys. Useful to access it using a different hostname, so that the ssh client keeps track of the two different sets of keys under different hostnames.
+13. No `PermitRootLogin yes`, but leave `/etc/ssh/sshd_config` default
+    configured as `PermitRootLogin prohibit-password`. Pre-populate
+    `/root/.ssh/authorized_keys` from environment variable
+    `ROOT_AUTHORIZED_KEYS`.
+14. Install Dropbear for remote unlocking, but let it generate its own server
+    keys. Useful to access it using a different hostname, so that the ssh client
+    keeps track of the two different sets of keys under different hostnames.
 15. Skip installing `popularity-contest`.
 
 #### Step 5: GRUB Installation
@@ -140,7 +156,8 @@ This is how this installer is more specific and/or different, compared to the gu
 1. No snapshot. It's easy enough to re-run this installer :)
 2.
 3.
-4. Rebooting and re-running the installer, usually works to resolve any partition or pool mounting/unmounting issues.
+4. Rebooting and re-running the installer, usually works to resolve any
+   partition or pool mounting/unmounting issues.
 5.
 6. Create no extra user account.
 7. No BIOS, only UEFI booting. No mirror. (TODO: Yes, mirror!)
@@ -184,7 +201,8 @@ Skip the rest;
 
 ##### Install Proxmox VE packages
 
-- Pre-answer install questions with contents of [src/commands/files/debconf-selections](src/commands/files/debconf-selections).
+- Pre-answer install questions with contents of
+  [src/commands/files/debconf-selections](src/commands/files/debconf-selections).
 
 #### Connect to the Proxmox VE web interface
 

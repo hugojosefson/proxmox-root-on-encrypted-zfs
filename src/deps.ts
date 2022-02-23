@@ -15,13 +15,12 @@ export const colorlog: {
   warning: LogColorer;
 } = { error, success, warning };
 
-export interface PasswdEntry {
+export interface PasswdEntry extends Stringifiable {
   username: string;
   uid: number;
   gid: number;
   homedir: string;
-  toJSON: () => any;
-  toString: () => string;
+  stringify: () => Promise<string>;
 }
 interface PasswdEntry_ {
   // deno-lint-ignore no-explicit-any : parse-passwd has no typings
@@ -46,10 +45,7 @@ export const parsePasswd = (content: string): Array<PasswdEntry> => {
         homedir: homedir as string,
         uid: parseInt(uid as string, 10),
         gid: parseInt(gid as string, 10),
-        toJSON: function () {
-          return this.username;
-        },
-        toString: function () {
+        stringify: async function () {
           return this.username;
         },
       }),
@@ -97,6 +93,7 @@ export const ipRegex =
   "(\\b25[0-5]|\\b2[0-4][0-9]|\\b[01]?[0-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}";
 
 import { Netmask as Netmask_ } from "https://cdn.skypack.dev/pin/netmask@v2.0.2-NDKHaKcpQNNH2W79Bihb/mode=imports/optimized/netmask.js";
+import { Stringifiable } from "./model/stringifiable.ts";
 export interface Netmask {
   ip: string;
   base: string;

@@ -20,8 +20,8 @@ export abstract class AbstractPackageCommand<T extends PackageName>
     this.packageName = packageName;
   }
 
-  toString() {
-    return `AbstractPackageCommand(${this.packageName})`;
+  stringify(): Promise<string> {
+    return Promise.resolve(`AbstractPackageCommand(${this.packageName})`);
   }
 }
 
@@ -37,7 +37,7 @@ export class InstallOsPackage extends AbstractPackageCommand<OsPackageName> {
     );
   }
 
-  toString(): string {
+  async stringify(): Promise<string> {
     return `InstallOsPackage(${this.packageName})`;
   }
 
@@ -81,8 +81,8 @@ export class RemoveOsPackage extends AbstractPackageCommand<OsPackageName> {
     );
   }
 
-  toString(): string {
-    return `RemoveOsPackage(${this.packageName})`;
+  stringify(): Promise<string> {
+    return Promise.resolve(`RemoveOsPackage(${this.packageName})`);
   }
 
   async run(): Promise<RunResult> {
@@ -125,7 +125,7 @@ export class ReplaceOsPackage extends Command {
     );
   }
 
-  toString(): string {
+  async stringify(): Promise<string> {
     return `ReplaceOsPackage(-${this.removePackageName}, +${this.installPackageName})`;
   }
 
@@ -174,7 +174,7 @@ export class InstallFlatpakPackage
     );
   }
 
-  toString(): string {
+  async stringify(): Promise<string> {
     return `InstallFlatpakPackage(${this.packageName})`;
   }
 
@@ -211,7 +211,7 @@ export class RemoveFlatpakPackage
     );
   }
 
-  toString(): string {
+  async stringify(): Promise<string> {
     return `RemoveFlatpakPackage(${this.packageName})`;
   }
 

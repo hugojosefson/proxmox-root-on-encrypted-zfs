@@ -74,24 +74,26 @@ export function inChrootCommand(
     });
 }
 
-export const chrootBasicSystemEnvironment = inChrootCommand(
-  "chrootBasicSystemEnvironment",
-  `
+export async function chrootBasicSystemEnvironment() {
+  return inChrootCommand(
+    "chrootBasicSystemEnvironment",
+    `
 ln -sf /proc/self/mounts /etc/mtab
 apt update
 apt full-upgrade -y
 
 debconf-set-selections << 'EOF'
 ${
-    (await readRelativeFile("./files/debconf-selections", import.meta.url))
-      .replace(/@@FQDN@@/g, config.FQDN)
-  }
+      (await readRelativeFile("./files/debconf-selections", import.meta.url))
+        .replace(/@@FQDN@@/g, await config("FQDN"))
+    }
 EOF
 
 apt install -y console-setup locales
 dpkg-reconfigure -f noninteractive locales tzdata keyboard-configuration console-setup
 
 `,
-  undefined,
-  true,
-);
+    undefined,
+    true,
+  );
+}
