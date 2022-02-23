@@ -16,6 +16,7 @@ export class Command implements Stringifiable {
   readonly dependencies: Array<Ish<Command>> = new Array(0);
   readonly locks: Array<Ish<Lock>> = new Array(0);
   readonly skipIfAll: Array<Ish<Predicate>> = new Array(0);
+  hasStarted = false;
   readonly doneDeferred: Deferred<CommandResult> = defer();
   readonly done: Promise<CommandResult> = this.doneDeferred.promise;
 
@@ -75,9 +76,10 @@ export class Command implements Stringifiable {
   }
 
   async runWhenDependenciesAreDone(): Promise<CommandResult> {
-    if (this.doneDeferred.isDone) {
+    if (this.hasStarted) {
       return this.done;
     }
+    this.hasStarted = true;
 
     const dependencies: Array<Command> = await resolveValues(
       this.dependencies,
