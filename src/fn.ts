@@ -28,9 +28,9 @@ export async function filterAsync<T>(
 
 export async function mapAsync<T, U>(
   fn: (t: T) => Ish<U>,
-  array: Ish<T>[],
+  array: Ish<Ish<T>[]>,
 ): Promise<U[]> {
-  const uishs = array
+  const uishs = (await resolveValue(array))
     .map(resolveValue)
     .map(async (tPromise) => await resolveValue(fn(await tPromise)));
   return await resolveValues(uishs);

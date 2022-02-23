@@ -2,7 +2,7 @@ import { config } from "../config.ts";
 import { defer, Deferred } from "../os/defer.ts";
 import { run } from "../run.ts";
 import { Lock, LockReleaser } from "./dependency.ts";
-import { Ish, resolveValue, resolveValues } from "../fn.ts";
+import { Ish, mapAsync, resolveValue, resolveValues } from "../fn.ts";
 import { Stringifiable } from "./stringifiable.ts";
 
 export interface CommandResult {
@@ -28,16 +28,12 @@ export class Command implements Stringifiable {
       `Command.custom(${this.name})`,
       this.locks.length
         ? `\n    .withLocks([${
-          (await resolveValues(this.locks))
-            .map(async (lock) => (await lock.stringify()))
-            .join(", ")
+          (await mapAsync((lock) => lock.stringify(), this.locks)).join(", ")
         }])`
         : "",
       this.dependencies.length
         ? `\n    .withDependencies([${
-          (await resolveValues(this.dependencies))
-            .map((dep) => dep.name)
-            .join(", ")
+          (await mapAsync((dep) => dep.name, this.dependencies)).join(", ")
         }])`
         : "",
       this.run !== Command.prototype.run
