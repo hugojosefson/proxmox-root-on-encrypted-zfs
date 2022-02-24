@@ -81,10 +81,11 @@ export class Command implements Stringifiable {
     }
     this.hasStarted = true;
 
-    const dependencies: Array<Command> = await resolveValues(
-      this.dependencies,
-    );
-    dependencies.forEach((dep) => dep.runWhenDependenciesAreDone());
+    alert('const dependencies: Array<Command> = await resolveValues(this.dependencies);')
+    const dependencies: Array<Command> = await resolveValues(this.dependencies);
+    for (const dep of dependencies) {
+      await dep.runWhenDependenciesAreDone();
+    }
     const dependenciesDone = dependencies.map(({ done }) => done);
     await Promise.all(dependenciesDone);
 
