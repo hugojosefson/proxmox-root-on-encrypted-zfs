@@ -2,6 +2,7 @@ import { config } from "../config.ts";
 import { defer, Deferred } from "../os/defer.ts";
 import { run } from "../run.ts";
 import { Lock, LockReleaser } from "./dependency.ts";
+import { usageAndThrow } from "../usage.ts";
 
 export interface CommandResult {
   status: Deno.ProcessStatus;
@@ -167,8 +168,10 @@ export class Command {
 
   withRun(run: RunFunction): Command {
     if (this.run !== Command.prototype.run) {
-      throw new Error(
-        `Unexpectedly trying to overwrite run method of ${this.toString()}`,
+      usageAndThrow(
+        new Error(
+          `Unexpectedly trying to overwrite run method of ${this.toString()}`,
+        ),
       );
     }
     this.run = run;

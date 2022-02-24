@@ -2,6 +2,7 @@ import { memoize, PasswdEntry } from "../deps.ts";
 import { defer, deferAlreadyResolvedVoid, Deferred } from "../os/defer.ts";
 import { resolvePath } from "../os/resolve-path.ts";
 import { ROOT } from "../os/user/root.ts";
+import { usageAndThrow } from "../usage.ts";
 
 export type LockReleaser = () => void;
 
@@ -30,10 +31,12 @@ export class FileSystemPath extends Lock {
 
   private static ofAbsolutePath(absolutePath: string): FileSystemPath {
     if (!absolutePath) {
-      throw new Error(
-        `ofAbsolutePath(absolutePath: ${
-          JSON.stringify(absolutePath)
-        }): absolutePath is not.`,
+      usageAndThrow(
+        new Error(
+          `ofAbsolutePath(absolutePath: ${
+            JSON.stringify(absolutePath)
+          }): absolutePath is not.`,
+        ),
       );
     }
     return new FileSystemPath(absolutePath);
@@ -47,8 +50,10 @@ export class FileSystemPath extends Lock {
   static of(user: PasswdEntry, path: string): FileSystemPath {
     const resolvedPath: string = resolvePath(user, path);
     if (!resolvedPath) {
-      throw new Error(
-        `of(user: ${user.toString()}, path: ${path.toString()}): resolvedPath is not.`,
+      usageAndThrow(
+        new Error(
+          `of(user: ${user.toString()}, path: ${path.toString()}): resolvedPath is not.`,
+        ),
       );
     }
     return FileSystemPath.ofAbsolutePathMemoized(resolvedPath);

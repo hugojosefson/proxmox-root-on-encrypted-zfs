@@ -8,6 +8,7 @@ import { ROOT } from "../os/user/root.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { config } from "../config.ts";
 import { ipRegex, type Netmask, netmask } from "../deps.ts";
+import { usageAndThrow } from "../usage.ts";
 
 const chrootInstallDropbear = inChrootCommand(
   "chrootInstallDropbear",
@@ -52,7 +53,7 @@ function initramfsIpLine(input: string): string {
     console.error(
       'ERROR: Set environment variable INITRAMFS_IP to a valid cidr, for example "10.0.0.5/24", or to a valid "IP=" line for /etc/initramfs-tools/initramfs.conf.',
     );
-    throw err;
+    usageAndThrow(err);
   }
 }
 

@@ -1,4 +1,5 @@
 import { readFromUrl } from "./read-from-url.ts";
+import { usageAndThrow } from "../usage.ts";
 
 export const requireEnv = async (name: string): Promise<string> => {
   const value = Deno.env.get(name);
@@ -17,7 +18,9 @@ export const requireEnv = async (name: string): Promise<string> => {
     return await readFromUrl(valueUrl);
   }
 
-  throw new Error(
-    `Missing env variable "${name}". You may alternatively set "${name}_FILE" or "${name}_URL" to read its value from a file or URL.`,
+  usageAndThrow(
+    new Error(
+      `Missing env variable "${name}". You may alternatively set "${name}_FILE" or "${name}_URL" to read its value from a file or URL.`,
+    ),
   );
 };

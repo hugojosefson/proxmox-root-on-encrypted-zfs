@@ -1,7 +1,7 @@
 import { inChrootCommand } from "./chroot-basic-system-environment.ts";
 import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
 import { Sequential } from "../model/command.ts";
-import { zfsRebootInstructions } from "./debian-6-first-boot.ts";
+import { zfsRebootInstructions } from "./zfs-reboot-instructions.ts";
 
 const chrootProxmoxPrepare = inChrootCommand(
   "chrootProxmoxPrepare",

@@ -1,5 +1,6 @@
 import { memoize, parsePasswd, PasswdEntry } from "../../deps.ts";
 import { defer, Deferred } from "../defer.ts";
+import { usageAndThrow } from "../../usage.ts";
 
 const uidComparator = (a: PasswdEntry, b: PasswdEntry) => a?.uid - b?.uid;
 async function _getUsers() {
@@ -28,13 +29,17 @@ async function _getTargetUser(): Promise<PasswdEntry> {
     if (targetUser) {
       return targetUser;
     }
-    throw new Error(
-      `ERROR: Could not find requested ${SUDO_USER} "${sudoUser}".`,
+    usageAndThrow(
+      new Error(
+        `ERROR: Could not find requested ${SUDO_USER} "${sudoUser}".`,
+      ),
     );
   }
 
-  throw new Error(
-    `ERROR: No target user found. Log in graphically as the target user. Then use sudo.`,
+  usageAndThrow(
+    new Error(
+      `ERROR: No target user found. Log in graphically as the target user. Then use sudo.`,
+    ),
   );
 }
 export const getTargetUser: typeof _getTargetUser = memoize(_getTargetUser);

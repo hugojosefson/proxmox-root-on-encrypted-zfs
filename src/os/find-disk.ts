@@ -2,6 +2,7 @@ import { findBlockDevicesOfType } from "./find-block-devices-of-type.ts";
 import { ensureSuccessfulStdOut } from "./exec.ts";
 import { ROOT } from "./user/root.ts";
 import { memoize } from "../deps.ts";
+import { usageAndThrow } from "../usage.ts";
 
 async function _findDisk(): Promise<string> {
   function findIdsCmd(targetDevice: string) {
@@ -26,13 +27,17 @@ async function _findDisk(): Promise<string> {
       .map(async (idLinks) => longestString(await idLinks)),
   );
   if (disksById.length > 1) {
-    throw new Error(
-      `Too many disks to choose from! Please specify one with environment DISK=/dev/disk/by-id/...`,
+    usageAndThrow(
+      new Error(
+        `Too many disks to choose from! Please specify one with environment DISK=/dev/disk/by-id/...`,
+      ),
     );
   }
   if (disksById.length < 1) {
-    throw new Error(
-      `Could not find one single disk. Please specify it with environment DISK=/dev/disk/by-id/...`,
+    usageAndThrow(
+      new Error(
+        `Could not find one single disk. Please specify it with environment DISK=/dev/disk/by-id/...`,
+      ),
     );
   }
   return disksById[0];

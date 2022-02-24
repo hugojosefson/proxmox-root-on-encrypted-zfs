@@ -4,6 +4,7 @@ import { CommandResult } from "../model/command.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { getDbusSessionBusAddress } from "./user/target-user.ts";
 import { ROOT } from "./user/root.ts";
+import { usageAndThrow } from "../usage.ts";
 
 export type ExecOptions = Pick<Deno.RunOptions, "cwd" | "env"> & {
   verbose?: boolean;
@@ -15,7 +16,9 @@ export const pipeAndCollect = async (
   to?: (Deno.Writer & Deno.Closer) | null | false,
   verbose?: boolean,
 ): Promise<string> => {
-  if (!from) throw new Error("Nothing to pipe from!");
+  if (!from) {
+    usageAndThrow(new Error("Nothing to pipe from!"));
+  }
 
   const isVerbose: boolean = typeof verbose === "boolean"
     ? verbose

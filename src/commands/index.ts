@@ -31,10 +31,10 @@ import { debian5GrubInstallation } from "./debian-5-grub-installation.ts";
 import { NOOP } from "./common/noop.ts";
 import {
   debian6FirstBoot,
-  zfsRebootInstructions,
   zfsSnapshotInstallation,
   zfsUmount,
 } from "./debian-6-first-boot.ts";
+import { zfsRebootInstructions } from "./zfs-reboot-instructions.ts";
 
 const commands: Record<string, Command> = {
   debian,
@@ -69,7 +69,7 @@ const commands: Record<string, Command> = {
   chrootSsh,
 };
 
-const kebabCommands: Record<string, Command> = Object.entries(commands)
+export const kebabCommands: Record<string, Command> = Object.entries(commands)
   .map(([key, value]) => [kebabCase(key), value] as [string, Command])
   .reduce(
     toObject<string, Command>(),
@@ -78,6 +78,3 @@ const kebabCommands: Record<string, Command> = Object.entries(commands)
 
 export const getCommand = (name: string): Command =>
   kebabCommands[name] || InstallOsPackage.of(name);
-
-export const availableCommands: Array<string> = Object.keys(kebabCommands)
-  .sort();

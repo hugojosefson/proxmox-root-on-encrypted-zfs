@@ -5,6 +5,7 @@ import { ensureSuccessful, isSuccessful } from "../../os/exec.ts";
 import { isInsideDocker } from "../../os/is-inside-docker.ts";
 import { REFRESH_OS_PACKAGES } from "../refresh-os-packages.ts";
 import { ROOT } from "../../os/user/root.ts";
+import { usageAndThrow } from "../../usage.ts";
 
 export type OsPackageName = string;
 export type AurPackageName = string;
@@ -147,7 +148,7 @@ export class ReplaceOsPackage extends Command {
    * @deprecated Use .of2() instead.
    */
   static of(): Command {
-    throw new Error("Use .of2() instead.");
+    usageAndThrow(new Error("Use .of2() instead."));
   }
 
   static of2: (
