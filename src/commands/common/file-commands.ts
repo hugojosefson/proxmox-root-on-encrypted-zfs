@@ -30,9 +30,8 @@ export abstract class AbstractFileCommand extends Command {
   }
 
   async stringify(): Promise<string> {
-    return `AbstractFileCommand(${this.owner.stringify()}, ${this.path.stringify()}, ${
-      formatOctal(this.mode)
-    })`;
+    return `AbstractFileCommand(${await this.owner.stringify()}, ${await this
+      .path.stringify()}, ${formatOctal(this.mode)})`;
   }
 
   abstract run(): Promise<RunResult>;
@@ -152,10 +151,15 @@ export class CreateFile extends AbstractFileCommand {
   }
 
   async stringify(): Promise<string> {
-    return `CreateFile(${await this.owner.stringify()}, ${await this.path
-      .stringify()}, ${formatOctal(this.mode)}, ${this.contents.length} bytes${
-      this.shouldBackupAnyExistingFile ? ", shouldBackupAnyExistingFile" : ""
-    })`;
+    return "CreateFile(" + [
+      await this.owner.stringify(),
+      await this.path.stringify(),
+      formatOctal(this.mode),
+      `${this.contents.length} bytes`,
+      ...(this.shouldBackupAnyExistingFile
+        ? ["shouldBackupAnyExistingFile"]
+        : []),
+    ].join(", ") + ")";
   }
 
   async run(): Promise<RunResult> {
