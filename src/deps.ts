@@ -83,7 +83,8 @@ import {
 } from "https://deno.land/x/compose@1.3.2/index.js";
 export { compose, composeUnary, pipe, pipeline, pipelineUnary };
 
-import { paramCase } from "https://deno.land/x/case@v2.1.0/mod.ts";
+import { camelCase, paramCase } from "https://deno.land/x/case@v2.1.0/mod.ts";
+export { camelCase };
 export function kebabCase(s: string): string {
   const kebab: string = paramCase(s);
 
@@ -116,3 +117,6 @@ export function netmask(input: string): Netmask {
     gateway: gateway ?? net.first,
   };
 }
+
+export { default as yargs } from "https://raw.githubusercontent.com/hugojosefson/yargs/fix-deno-env/deno.ts";
+export type { Arguments as YargsArguments } from "https://raw.githubusercontent.com/hugojosefson/yargs/fix-deno-env/deno-types.ts";

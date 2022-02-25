@@ -3,6 +3,7 @@
 // Run this script with sudo to update the list of available commands for the usage help text.
 
 import { getTargetUser } from "./os/user/target-user.ts";
+import { findBlockDevicesOfType } from "./os/find-block-devices-of-type.ts";
 
 export async function writeAvailableCommands(): Promise<void> {
   const { kebabCommands } = await import("./commands/index.ts");
@@ -24,16 +25,19 @@ ${lines.join("")}];
 }
 
 if (import.meta.main) {
-  Object.entries({
+  const fakeOptions = {
     VERBOSE: "false",
+    DISKS: (await findBlockDevicesOfType("disk"))[0],
     DISK_ENCRYPTION_PASSWORD: "string",
     ROOT_PASSWORD: "string",
     ROOT_AUTHORIZED_KEYS: "string",
     FQDN: "string",
     IP: "10.10.10.10/24",
     INITRAMFS_IP: "10.10.10.10/24",
-    DISK: "string",
-  }).forEach(([key, value]) => Deno.env.set(key, value));
+  };
+  Object.entries(fakeOptions).forEach(
+    ([key, value]) => Deno.env.set("PROXMOX_INSTALL_" + key, value),
+  );
 
   await writeAvailableCommands();
 }

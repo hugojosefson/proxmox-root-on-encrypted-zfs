@@ -51,7 +51,7 @@ function initramfsIpLine(input: string): string {
     return `IP=${net.ip}::${net.gateway}:${net.mask}`;
   } catch (err) {
     console.error(
-      'ERROR: Set environment variable INITRAMFS_IP to a valid cidr, for example "10.0.0.5/24", or to a valid "IP=" line for /etc/initramfs-tools/initramfs.conf.',
+      'ERROR: Supply --initramfs-ip as a valid cidr, for example "--initramfs-ip=10.0.0.5/24", or as a valid "IP=" line for /etc/initramfs-tools/initramfs.conf.',
     );
     usageAndThrow(err);
   }

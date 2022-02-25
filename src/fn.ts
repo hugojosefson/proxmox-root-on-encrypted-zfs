@@ -74,3 +74,7 @@ export async function resolveValues<T>(xs: Array<Ish<T>>): Promise<Array<T>> {
   const promises: Promise<T>[] = xs.map(resolveValue);
   return await Promise.all(promises);
 }
+
+export function isUndefined(x?: unknown): x is undefined {
+  return typeof x === "undefined";
+}
