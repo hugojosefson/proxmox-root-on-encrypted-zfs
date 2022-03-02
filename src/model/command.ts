@@ -104,6 +104,10 @@ export class Command {
     const lockReleaserPromises: Promise<LockReleaser>[] = this.locks
       .map((lock) => lock.take());
 
+    const lockReleasers: LockReleaser[] = await Promise.all(
+      lockReleaserPromises,
+    );
+
     try {
       const innerResult: RunResult = await (this.run().catch(
         this.doneDeferred.reject,
@@ -112,8 +116,7 @@ export class Command {
         console.error(`Running command ${this.toString()} DONE.`);
       return this.resolve(innerResult);
     } finally {
-      for (const lockReleaserPromise of lockReleaserPromises) {
-        const releaseTheLock: () => void = await lockReleaserPromise;
+      for (const releaseTheLock of lockReleasers) {
         releaseTheLock();
       }
     }
