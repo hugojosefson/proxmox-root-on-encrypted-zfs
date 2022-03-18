@@ -19,12 +19,12 @@ export const zfsUmount = Command.custom("zfsUmount").withRun(async () => {
     "-c",
     `mount | grep -v zfs | tac | awk '/\\/mnt/ {print $3}' | xargs -i{} umount -lf {}`,
   ]);
-  await ensureSuccessful(ROOT, ["zpool", "export", "-fa"]);
+  await ensureSuccessful(ROOT, ["zpool", "export", "bpool"]);
 });
 
 export const debian6FirstBoot = new Sequential("debian6FirstBoot", [
   debian5GrubInstallation,
   // zfsSnapshotInstallation,
-  // zfsUmount,
+  zfsUmount,
   zfsRebootInstructions,
 ]);
