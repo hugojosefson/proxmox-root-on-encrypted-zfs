@@ -16,7 +16,9 @@ export const destroyAllPoolsAndDisks = Command.custom("destroyAllPoolsAndDisks")
   .withRun(async () => {
     await ensureSuccessful(ROOT, ["swapoff", "--all"]);
     await ensureSuccessful(ROOT, [
-      "sh",
+      "bash",
+      `-euo`,
+      `pipefail`,
       "-c",
       `
 mount | grep -v zfs | tac | awk '/\\/mnt/ {print $3}' | xargs -i{} umount -lf {}

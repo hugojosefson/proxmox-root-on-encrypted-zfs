@@ -55,5 +55,5 @@ export const debian3SystemInstallation = Command.custom(
   .withDependencies([debian2DiskFormatting])
   .withSkipIfAll([() => existsPath("/mnt/etc/zfs/zpool.cache".split("/"))])
   .withRun(async () => {
-    await ensureSuccessful(ROOT, ["sh", "-c", cmds]);
+    await ensureSuccessful(ROOT, ["sh", "-ec", cmds]);
   });

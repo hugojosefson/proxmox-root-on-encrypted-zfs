@@ -12,7 +12,13 @@ function findIdsCmd(targetDevice: string): string {
 
 async function findIds(targetDevice: string): Promise<string[]> {
   const cmd = findIdsCmd(targetDevice);
-  const output = await ensureSuccessfulStdOut(ROOT, ["sh", "-c", cmd]);
+  const output = await ensureSuccessfulStdOut(ROOT, [
+    "bash",
+    `-euo`,
+    `pipefail`,
+    "-c",
+    cmd,
+  ]);
   const lines = output
     .split("\n")
     .filter((line) => line.length > 0);

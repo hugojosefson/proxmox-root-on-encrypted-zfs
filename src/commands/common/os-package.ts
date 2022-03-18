@@ -257,6 +257,8 @@ function isInstalledFlatpakPackage(
 ): Promise<boolean> {
   return isSuccessful(ROOT, [
     "bash",
+    `-euo`,
+    `pipefail`,
     "-c",
     `flatpak list --columns application | grep --line-regexp '${packageName}'`,
   ], { verbose: false });

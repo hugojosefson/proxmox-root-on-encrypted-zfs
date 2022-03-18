@@ -15,7 +15,9 @@ zfs snapshot rpool/ROOT/debian@install
 
 export const zfsUmount = Command.custom("zfsUmount").withRun(async () => {
   await ensureSuccessful(ROOT, [
-    "sh",
+    "bash",
+    `-euo`,
+    `pipefail`,
     "-c",
     `mount | grep -v zfs | tac | awk '/\\/mnt/ {print $3}' | xargs -i{} umount -lf {}`,
   ]);

@@ -30,7 +30,7 @@ const chrootMount = (paths: string[]) =>
         .withSkipIfAll([async () => {
           await ensureSuccessful(ROOT, [
             "sh",
-            "-c",
+            "-ec",
             `mount | grep "/mnt${path}"`,
           ]);
           return true;
