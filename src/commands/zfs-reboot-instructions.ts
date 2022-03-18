@@ -11,7 +11,7 @@ Now, reboot.
 When you get to the initramfs prompt, run these two commands:
 
   zpool import -fa
-  zpool export -fa
+  zpool export -a
 
 Then reboot again, and you will be prompted for the zfs encryption key.
 `);
