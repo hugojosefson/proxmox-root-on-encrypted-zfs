@@ -66,6 +66,8 @@ curl -fsSL http://dev-server:3000/src/cli.ts \
 
 Install Debian:
 
+> TODO: run all commands sequentially, only one at a time.
+
 ```bash
 curl -fsSL http://dev-server:3000/src/cli.ts \
 | sudo DISK_ENCRYPTION_PASSWORD=asdasdasd \
