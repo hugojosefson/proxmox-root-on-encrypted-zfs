@@ -81,7 +81,9 @@ export class Command {
       return this.done;
     }
 
-    this.dependencies.forEach((dep) => dep.runWhenDependenciesAreDone());
+    for (const dependency of this.dependencies) {
+      await dependency.runWhenDependenciesAreDone()
+    }
     const dependenciesDone = this.dependencies.map(({ done }) => done);
     await Promise.all(dependenciesDone);
 
@@ -129,7 +131,7 @@ export class Command {
   async run(): Promise<RunResult> {
   }
 
-  resolve(
+  async resolve(
     commandResult: RunResult,
   ): Promise<CommandResult> {
     if (!commandResult) {
@@ -150,7 +152,7 @@ export class Command {
     }
     if (Array.isArray(commandResult)) {
       const postCommands: Command[] = commandResult;
-      return run(postCommands).then((postCommandResults: CommandResult[]) =>
+      return await run(postCommands).then((postCommandResults: CommandResult[]) =>
         this.resolve(postCommandResults[postCommandResults.length])
       );
     }
