@@ -51,20 +51,7 @@ curl -fsSL http://dev-server:3000/src/cli.ts | sudo sh -s --
 
 ### More detailed full examples
 
-Destroy and delete all pools and disks + reboot:
-
-```bash
-curl -fsSL http://dev-server:3000/src/cli.ts \
-| sudo DISK_ENCRYPTION_PASSWORD=asdasdasd \
-       ROOT_PASSWORD=rootpass \
-       FQDN=proxymix.example.com \
-       ROOT_AUTHORIZED_KEYS_URL=https://github.com/hugojosefson.keys \
-       sh -s -- destroy-all-pools-and-disks \
-\
-&& sudo reboot
-```
-
-Install Debian:
+Install Debian and Proxmox VE:
 
 ```bash
 curl -fsSL http://dev-server:3000/src/cli.ts | sh -s --
