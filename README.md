@@ -67,14 +67,16 @@ curl -fsSL http://dev-server:3000/src/cli.ts \
 Install Debian:
 
 ```bash
-curl -fsSL http://dev-server:3000/src/cli.ts \
-| sudo DISK_ENCRYPTION_PASSWORD=asdasdasd \
-       DISKS=/dev/vda \
-       ROOT_PASSWORD=rootpass \
-       FQDN=proxymix.example.com \
-       ROOT_AUTHORIZED_KEYS_URL=https://github.com/hugojosefson.keys \
-       VERBOSE=true \
-       sh -s -- debian
+curl -fsSL http://dev-server:3000/src/cli.ts | sudo sh -s --
+
+sudo  DISK_ENCRYPTION_PASSWORD=asdasdasd \
+      DISKS=/dev/vda \
+      ROOT_PASSWORD=rootpass \
+      FQDN=proxymix.example.com \
+      ROOT_AUTHORIZED_KEYS_URL=https://github.com/hugojosefson.keys \
+      VERBOSE=true \
+      /tmp/deno-range*/bin/deno run --reload=http://dev-server:3000 --unstable --allow-all http://dev-server:3000/src/cli.ts \
+      debian
 ```
 
 If you want to inspect the chroot:
