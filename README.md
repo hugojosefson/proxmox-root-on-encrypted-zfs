@@ -99,8 +99,7 @@ guides linked above.
 
 #### Step 2: Disk Formatting
 
-1. Use environment variable `DISK` to specify which disk to use. If you only
-   have one disk connected, it can be auto-detected.
+1. Use environment variable `DISKS` to specify which disks to use.
 2. Optionally clear any existing ZFS pools and disks with the command
    `destroy-all-pools-and-disks`. Make sure nothing is connected that you wish
    to keep!

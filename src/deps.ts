@@ -106,10 +106,10 @@ export interface Netmask {
   gateway: string;
   // and more
 }
-export function netmask(cidr: string): Netmask {
-  const parts = cidr.split("/");
+export function netmask(input: string): Netmask {
+  const parts = input.split("/");
   const [ip, _bitmask, gateway] = parts;
-  const net = new Netmask_(cidr);
+  const net = new Netmask_(input);
   return {
     ...net,
     ip,

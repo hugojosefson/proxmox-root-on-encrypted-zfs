@@ -13,13 +13,13 @@ import { chrootTmpfs } from "./chroot-tmpfs.ts";
 import { chrootSsh } from "./chroot-ssh.ts";
 import { chrootDropbearRemoteUnlocking } from "./chroot-dropbear-remote-unlocking.ts";
 import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
-import { getDisk } from "../os/find-disk.ts";
+import { getDisks } from "../os/find-disk.ts";
 import { chrootProxmox } from "./chroot-proxmox.ts";
 
 export const debian4SystemConfiguration = Command.custom(
   "debian4SystemConfiguration",
 )
-  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
+  .withLocks((await getDisks()).map((disk) => FileSystemPath.of(ROOT, disk)))
   .withDependencies([
     debian3SystemInstallation,
     hostname,

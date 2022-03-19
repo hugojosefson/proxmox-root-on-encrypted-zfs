@@ -2,6 +2,7 @@ import { requireEnv } from "./os/require-env.ts";
 
 export type Config = {
   VERBOSE: boolean;
+  DISKS: string[];
   DISK_ENCRYPTION_PASSWORD: string;
   ROOT_PASSWORD: string;
   ROOT_AUTHORIZED_KEYS: string;
@@ -12,6 +13,7 @@ export type Config = {
 
 export const config: Config = {
   VERBOSE: Deno.env.get("VERBOSE") === "true",
+  DISKS: (await requireEnv("DISKS")).split(",").map((disk) => disk.trim()),
   DISK_ENCRYPTION_PASSWORD: await requireEnv("DISK_ENCRYPTION_PASSWORD"),
   ROOT_PASSWORD: await requireEnv("ROOT_PASSWORD"),
   ROOT_AUTHORIZED_KEYS: await requireEnv("ROOT_AUTHORIZED_KEYS"),

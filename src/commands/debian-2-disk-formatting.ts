@@ -5,13 +5,13 @@ import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/root.ts";
 import { existsPath } from "./common/file-commands.ts";
-import { getDisk } from "../os/find-disk.ts";
+import { getDisks, getFirstDisk } from "../os/find-disk.ts";
 
 export const zfsPartition2Efi = Command.custom("zfsPartition2Efi")
-  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
+  .withLocks([FileSystemPath.of(ROOT, await getFirstDisk())])
   .withDependencies([debian1PrepareInstallEnv])
   .withSkipIfAll([
-    async () => await existsPath(`${await getDisk()}-part2`.split("/")),
+    async () => await existsPath(`${await getFirstDisk()}-part2`.split("/")),
   ])
   .withRun(async () => {
     await ensureSuccessful(ROOT, ["sync"]);
@@ -19,60 +19,72 @@ export const zfsPartition2Efi = Command.custom("zfsPartition2Efi")
       "sgdisk",
       "--new=2:1M:+512M",
       "--typecode=2:EF00",
-      await getDisk(),
+      await getFirstDisk(),
     ]);
     await ensureSuccessful(ROOT, ["sync"]);
     await ensureSuccessful(ROOT, ["sleep", "5"]);
   });
 
 export const zfsPartition3Boot = Command.custom("zfsPartition3Boot")
-  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
+  .withLocks((await getDisks()).map((disk) => FileSystemPath.of(ROOT, disk)))
   .withDependencies([debian1PrepareInstallEnv, zfsPartition2Efi])
-  .withSkipIfAll([
-    async () => await existsPath(`${await getDisk()}-part3`.split("/")),
-  ])
+  .withSkipIfAll(
+    (await getDisks()).map((disk) =>
+      async () => await existsPath(`${disk}-part3`.split("/"))
+    ),
+  )
   .withRun(async () => {
     await ensureSuccessful(ROOT, ["sync"]);
-    await ensureSuccessful(ROOT, [
-      "sgdisk",
-      "--new=3:0:+1G",
-      "--typecode=3:BF01",
-      await getDisk(),
-    ]);
+    for (const disk of await getDisks()) {
+      await ensureSuccessful(ROOT, [
+        "sgdisk",
+        "--new=3:0:+1G",
+        "--typecode=3:BF01",
+        disk,
+      ]);
+    }
     await ensureSuccessful(ROOT, ["sync"]);
     await ensureSuccessful(ROOT, ["sleep", "5"]);
-    await ensureSuccessful(ROOT, [
-      "sh",
-      "-c",
-      `partx -v -a ${await getDisk()} || true`,
-    ]);
+    for (const disk of await getDisks()) {
+      await ensureSuccessful(ROOT, [
+        "sh",
+        "-c",
+        `partx -v -a ${disk} || true`,
+      ]);
+    }
   });
 
 export const zfsPartition4Root = Command.custom("zfsPartition4Root")
-  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
+  .withLocks((await getDisks()).map((disk) => FileSystemPath.of(ROOT, disk)))
   .withDependencies([debian1PrepareInstallEnv, zfsPartition3Boot])
-  .withSkipIfAll([
-    async () => await existsPath(`${await getDisk()}-part4`.split("/")),
-  ])
+  .withSkipIfAll(
+    (await getDisks()).map((disk) =>
+      async () => await existsPath(`${disk}-part4`.split("/"))
+    ),
+  )
   .withRun(async () => {
     await ensureSuccessful(ROOT, ["sync"]);
-    await ensureSuccessful(ROOT, [
-      "sgdisk",
-      "--new=4:0:0",
-      "--typecode=4:BF00",
-      await getDisk(),
-    ]);
+    for (const disk of await getDisks()) {
+      await ensureSuccessful(ROOT, [
+        "sgdisk",
+        "--new=4:0:0",
+        "--typecode=4:BF00",
+        disk,
+      ]);
+    }
     await ensureSuccessful(ROOT, ["sync"]);
     await ensureSuccessful(ROOT, ["sleep", "5"]);
-    await ensureSuccessful(ROOT, [
-      "sh",
-      "-c",
-      `partx -v -a ${await getDisk()} || true`,
-    ]);
+    for (const disk of await getDisks()) {
+      await ensureSuccessful(ROOT, [
+        "sh",
+        "-c",
+        `partx -v -a ${disk} || true`,
+      ]);
+    }
   });
 
 export const zfsBootPool = Command.custom("zfsBootPool")
-  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
+  .withLocks((await getDisks()).map((disk) => FileSystemPath.of(ROOT, disk)))
   .withDependencies([zfsPartition3Boot])
   .withSkipIfAll([
     () =>
@@ -119,12 +131,12 @@ export const zfsBootPool = Command.custom("zfsBootPool")
       "-R",
       "/mnt",
       "bpool",
-      `${await getDisk()}-part3`,
+      ...(await getDisks()).map((disk) => `${disk}-part3`),
     ]);
   });
 
 export const zfsRootPool = Command.custom("zfsRootPool")
-  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
+  .withLocks((await getDisks()).map((disk) => FileSystemPath.of(ROOT, disk)))
   .withDependencies([zfsPartition4Root])
   .withSkipIfAll([
     () =>
@@ -157,7 +169,7 @@ export const zfsRootPool = Command.custom("zfsRootPool")
       "-R",
       "/mnt",
       "rpool",
-      `${await getDisk()}-part4`,
+      ...(await getDisks()).map((disk) => `${disk}-part4`),
     ], {
       stdin:
         `${config.DISK_ENCRYPTION_PASSWORD}\n${config.DISK_ENCRYPTION_PASSWORD}\n`,

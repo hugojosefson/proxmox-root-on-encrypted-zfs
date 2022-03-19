@@ -7,7 +7,7 @@ import {
 import { ROOT } from "../os/user/root.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { config } from "../config.ts";
-import { ipRegex, type Netmask, netmask } from "../deps.ts";
+import { ipRegex, netmask } from "../deps.ts";
 import { usageAndThrow } from "../usage.ts";
 
 const chrootInstallDropbear = inChrootCommand(

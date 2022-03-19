@@ -2,7 +2,7 @@ import {
   inChrootCommand,
   inChrootPrefix,
 } from "./chroot-basic-system-environment.ts";
-import { getDisk } from "../os/find-disk.ts";
+import { getFirstDisk } from "../os/find-disk.ts";
 import { Command, Sequential } from "../model/command.ts";
 import { ensureSuccessful, ensureSuccessfulStdOut } from "../os/exec.ts";
 import { ROOT } from "../os/user/root.ts";
@@ -25,13 +25,13 @@ const chrootGrubInstallDosfsTools = inChrootCommand(
 
 const chrootGrubMkfsEfiPart2 = inChrootCommand(
   "chrootGrubMkfsEfiPart2",
-  `mkdosfs -F 32 -s 1 -n EFI ${await getDisk()}-part2`,
+  `mkdosfs -F 32 -s 1 -n EFI ${await getFirstDisk()}-part2`,
 )
   .withSkipIfAll([
     async () => {
       await ensureSuccessful(
         ROOT,
-        inChrootPrefix(`file -sL ${await getDisk()}-part2 | grep EFI`),
+        inChrootPrefix(`file -sL ${await getFirstDisk()}-part2 | grep EFI`),
       );
       return true;
     },
@@ -55,7 +55,7 @@ const chrootGrubLineInFstab = Command.custom("chrootGrubLineInFstab").withRun(
   async (): Promise<[Command]> => {
     const uuid = await ensureSuccessfulStdOut(ROOT, [
       ..."blkid -s UUID -o value".split(" "),
-      await getDisk() + "-part2",
+      await getFirstDisk() + "-part2",
     ]);
     return [
       new LineInFile(
@@ -75,7 +75,7 @@ const chrootGrubMountBootEfi = inChrootCommand(
     async () => {
       await ensureSuccessful(
         ROOT,
-        inChrootPrefix(`findmnt ${await getDisk()}-part2`),
+        inChrootPrefix(`findmnt ${await getFirstDisk()}-part2`),
       );
       return true;
     },

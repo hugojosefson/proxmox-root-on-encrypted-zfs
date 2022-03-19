@@ -1,52 +1,46 @@
-import { findBlockDevicesOfType } from "./find-block-devices-of-type.ts";
 import { ensureSuccessfulStdOut } from "./exec.ts";
 import { ROOT } from "./user/root.ts";
 import { memoize } from "../deps.ts";
+import { config } from "../config.ts";
+import { mapAsync } from "../fn.ts";
 import { usageAndThrow } from "../usage.ts";
 
-async function _findDisk(): Promise<string> {
-  function findIdsCmd(targetDevice: string) {
-    const targetDeviceRegex = targetDevice.replaceAll("/", "\\/");
-    return `find /dev/disk/by-id/ -type l -exec echo -ne "{}\\t" \\; -exec readlink -f {} \\; | awk -F $'\\t' '/\\t${targetDeviceRegex}$/{print $1}'`;
-  }
-
-  const disks: Array<string> = await findBlockDevicesOfType("disk");
-  const disksById: string[] = await Promise.all(
-    disks
-      .map(findIdsCmd)
-      .map((cmd) => ensureSuccessfulStdOut(ROOT, ["sh", "-c", cmd]))
-      .map(async (outputPromise) =>
-        (await outputPromise).split("\n").filter((line) => line.length > 0)
-      )
-      .map(async (linesPromise: Promise<string[]>) =>
-        (await linesPromise).map((line: string) => line.split("\t"))
-      )
-      .map(async (tuplesPromise) =>
-        (await tuplesPromise).map((tuple) => tuple[0])
-      )
-      .map(async (idLinks) => longestString(await idLinks)),
-  );
-  if (disksById.length > 1) {
-    usageAndThrow(
-      new Error(
-        `Too many disks to choose from! Please specify one with environment DISK=/dev/disk/by-id/...`,
-      ),
-    );
-  }
-  if (disksById.length < 1) {
-    usageAndThrow(
-      new Error(
-        `Could not find one single disk. Please specify it with environment DISK=/dev/disk/by-id/...`,
-      ),
-    );
-  }
-  return disksById[0];
+function findIdsCmd(targetDevice: string): string {
+  const targetDeviceRegex = targetDevice.replaceAll("/", "\\/");
+  return `find /dev/disk/by-id/ -type l -exec echo -ne "{}\\t" \\; -exec readlink -f {} \\; | awk -F $'\\t' '/\\t${targetDeviceRegex}$/{print $1}'`;
 }
 
-const findDisk: typeof _findDisk = memoize(_findDisk);
+async function findIds(targetDevice: string): Promise<string[]> {
+  const cmd = findIdsCmd(targetDevice);
+  const output = await ensureSuccessfulStdOut(ROOT, ["sh", "-c", cmd]);
+  const lines = output
+    .split("\n")
+    .filter((line) => line.length > 0);
+  const tuples = lines.map((line: string) => line.split("\t"));
+  const idLinks = tuples.map((tuple) => tuple[0]);
+  if (idLinks.length === 0) {
+    usageAndThrow(
+      new Error(
+        `Could not find corresponding /dev/disk/by-id/* device for "${targetDevice}".`,
+      ),
+    );
+  }
+  return idLinks;
+}
 
-export async function getDisk(): Promise<string> {
-  return Deno.env.get("DISK") ?? await findDisk();
+async function lookupDisks(disks: string[]): Promise<string[]> {
+  const idsForEachDisk: string[][] = await mapAsync(findIds, disks);
+  return await mapAsync(longestString, idsForEachDisk);
+}
+
+async function _getDisks(): Promise<string[]> {
+  return await lookupDisks(config.DISKS);
+}
+
+export const getDisks: typeof _getDisks = memoize(_getDisks);
+
+export async function getFirstDisk(): Promise<string> {
+  return (await getDisks())[0];
 }
 
 function longestString(strings: string[]): string {

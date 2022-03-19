@@ -4,10 +4,10 @@ import { InstallOsPackage } from "./common/os-package.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/root.ts";
 import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
-import { getDisk } from "../os/find-disk.ts";
+import { getDisks } from "../os/find-disk.ts";
 
 export const destroyAllPoolsAndDisks = Command.custom("destroyAllPoolsAndDisks")
-  .withLocks([FileSystemPath.of(ROOT, await getDisk())])
+  .withLocks((await getDisks()).map((disk) => FileSystemPath.of(ROOT, disk)))
   .withDependencies([
     debian1PrepareInstallEnv,
     InstallOsPackage.of("gdisk"),
@@ -38,12 +38,14 @@ rmdir /mnt/* || true
         .map((cmd) => ensureSuccessful(ROOT, cmd)),
     );
     if (mdArrays.length) {
-      await ensureSuccessful(ROOT, [
-        "mdadm",
-        "--zero-superblock",
-        "--force",
-        await getDisk(),
-      ]);
+      for (const disk of await getDisks()) {
+        await ensureSuccessful(ROOT, [
+          "mdadm",
+          "--zero-superblock",
+          "--force",
+          disk,
+        ]);
+      }
     }
     const pools =
       (await ensureSuccessfulStdOut(ROOT, "zpool list -o name -H".split(" ")))
@@ -54,12 +56,14 @@ rmdir /mnt/* || true
       ),
     );
 
-    await ensureSuccessful(ROOT, ["wipefs", "--all", await getDisk()]);
-    await ensureSuccessful(ROOT, ["sgdisk", "--zap-all", await getDisk()]);
-    await ensureSuccessful(ROOT, ["sgdisk", "--clear", await getDisk()]);
-    await ensureSuccessful(ROOT, [
-      "sh",
-      "-c",
-      `partx -v -a ${await getDisk()} || true`,
-    ]);
+    await ensureSuccessful(ROOT, ["wipefs", "--all", ...await getDisks()]);
+    for (const disk of await getDisks()) {
+      await ensureSuccessful(ROOT, ["sgdisk", "--zap-all", disk]);
+      await ensureSuccessful(ROOT, ["sgdisk", "--clear", disk]);
+      await ensureSuccessful(ROOT, [
+        "sh",
+        "-c",
+        `partx -v -a ${disk} || true`,
+      ]);
+    }
   });

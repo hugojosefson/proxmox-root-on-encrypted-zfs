@@ -25,3 +25,52 @@ export async function filterAsync<T>(
     .filter(([_t, shouldInclude]) => shouldInclude)
     .map(([t, _shouldInclude]) => t);
 }
+
+export function tryJsonParse(input: string): unknown {
+  try {
+    return JSON.parse(input);
+  } catch (_ignored) {
+    return input;
+  }
+}
+
+export async function mapAsync<T, U>(
+  fn: (t: T) => Ish<U>,
+  array: Ish<T>[],
+): Promise<U[]> {
+  const uishs = array
+    .map(resolveValue)
+    .map(async (tPromise) => await resolveValue(fn(await tPromise)));
+  return await resolveValues(uishs);
+}
+
+export async function flatmapAsync<T, U>(
+  fn: (t: T) => Ish<U[]>,
+  array: Ish<T>[],
+): Promise<U[]> {
+  return (await mapAsync(fn, array)).flat();
+}
+
+export function isPromise<T>(
+  maybePromise: PromiseLike<T> | unknown,
+): maybePromise is Promise<T> {
+  return typeof (maybePromise as PromiseLike<T>)?.then === "function";
+}
+
+export type Getter<T> = () => T | Promise<T>;
+export type Ish<T> = T | Promise<T> | Getter<T>;
+
+export async function resolveValue<T>(x: Ish<T>): Promise<T> {
+  if (typeof x === "function") {
+    return resolveValue((x as Getter<T>)());
+  }
+  if (isPromise(x)) {
+    return await x;
+  }
+  return x;
+}
+
+export async function resolveValues<T>(xs: Array<Ish<T>>): Promise<Array<T>> {
+  const promises: Promise<T>[] = xs.map(resolveValue);
+  return await Promise.all(promises);
+}
