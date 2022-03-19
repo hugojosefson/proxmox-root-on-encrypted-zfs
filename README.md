@@ -51,7 +51,7 @@ curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encryp
 
 ### More detailed full example
 
-Install Debian and Proxmox VE:
+#### Install Debian from the LiveCD
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/main/src/cli.ts | sh -s --
@@ -68,11 +68,31 @@ sudo  NON_INTERACTIVE=true \
         debian
 ```
 
-If you want to inspect the chroot:
+> If you want to inspect the chroot:
+>
+> ```bash
+> sudo chroot /mnt /usr/bin/env bash --login
+> ```
 
-```bash
-sudo chroot /mnt /usr/bin/env bash --login
+Reboot into the installed OS.
+
+When you get to the initramfs prompt, run these two commands:
+
+```sh
+zpool import -fa
+zpool export -a
 ```
+
+Then press CTRL+ALT+DELETE to reboot again, and you will be prompted for the zfs
+encryption key.
+
+#### Install Proxmox VE
+
+Login as `root`.
+
+Continue manually at
+[Install Proxmox VE packages](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_11_Bullseye#Install_Proxmox_VE_packages)
+in the _Install Proxmox VE on Debian 11 Bullseye_ guide.
 
 ## Opinionated: Specifics
 
@@ -195,6 +215,9 @@ Skip the rest;
 - Pre-answer install questions with contents of
   [src/commands/files/debconf-selections](src/commands/files/debconf-selections).
 
-#### Connect to the Proxmox VE web interface
+- Not installing the `proxmox-ve` package, but leaving it up to manual
+  installation and configuration.
 
-No automation here. Leave this to manual configuration afterwards.
+See
+[Install Proxmox VE packages](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_11_Bullseye#Install_Proxmox_VE_packages)
+in the _Install Proxmox VE on Debian 11 Bullseye_ guide.
