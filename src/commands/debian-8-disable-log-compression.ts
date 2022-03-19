@@ -1,4 +1,5 @@
-import { inChrootCommand } from "./chroot-basic-system-environment.ts";
+import { inChrootCommand } from "./in-chroot-command.ts";
+import { debian6FirstBoot } from "./debian-6-first-boot.ts";
 
 export const debian8DisableLogCompression = inChrootCommand(
   "debian8DisableLogCompression",
@@ -9,4 +10,5 @@ for file in /etc/logrotate.d/* ; do
     fi
 done
 `,
-);
+)
+  .withDependencies([debian6FirstBoot]);

@@ -74,3 +74,11 @@ export async function resolveValues<T>(xs: Array<Ish<T>>): Promise<Array<T>> {
   const promises: Promise<T>[] = xs.map(resolveValue);
   return await Promise.all(promises);
 }
+
+export function repeat(n: number, s: string): string {
+  return Array(n).fill(s).join("");
+}
+
+export function indent(levels: number, s: string, indentation = "  "): string {
+  return s.replaceAll(/^/g, repeat(levels, indentation));
+}

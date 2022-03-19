@@ -83,9 +83,19 @@ export const zfsPartition4Root = Command.custom("zfsPartition4Root")
     }
   });
 
+export const zfsPartitions = Command.custom("zfsPartitions")
+  .withDependencies([
+    debian1PrepareInstallEnv,
+    zfsPartition4Root,
+  ]);
+
 export const zfsBootPool = Command.custom("zfsBootPool")
   .withLocks((await getDisks()).map((disk) => FileSystemPath.of(ROOT, disk)))
-  .withDependencies([zfsPartition3Boot])
+  .withDependencies([
+    debian1PrepareInstallEnv,
+    zfsPartitions,
+    zfsPartition3Boot,
+  ])
   .withSkipIfAll([
     () =>
       ensureSuccessful(ROOT, `zpool list bpool`.split(" ")).then(() => true),
@@ -175,11 +185,6 @@ export const zfsRootPool = Command.custom("zfsRootPool")
         `${config.DISK_ENCRYPTION_PASSWORD}\n${config.DISK_ENCRYPTION_PASSWORD}\n`,
     });
   });
-
-export const zfsPartitions = Command.custom("zfsPartitions")
-  .withDependencies([
-    zfsPartition4Root,
-  ]);
 
 export const debian2DiskFormatting = Command.custom("debian2DiskFormatting")
   .withDependencies([

@@ -1,7 +1,7 @@
-import { inChrootCommand } from "./chroot-basic-system-environment.ts";
 import { debian4SystemConfiguration } from "./debian-4-system-configuration.ts";
 import { existsPath } from "./common/file-commands.ts";
 import { chrootGrub } from "./chroot-grub.ts";
+import { inChrootCommand } from "./in-chroot-command.ts";
 
 export const debian5GrubInstallation = inChrootCommand(
   "debian5GrubInstallation",

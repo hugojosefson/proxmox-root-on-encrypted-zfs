@@ -40,7 +40,9 @@ export class Command {
         }])`
         : "",
       this.run !== Command.prototype.run
-        ? `\n    .withRun(${this.run.toString()})`
+        ? `\n    .withRun(${
+          this.run.toString().substring(0, 20).replace("\n", "; ")
+        }...)`
         : "",
     ].join("");
   }
@@ -82,7 +84,7 @@ export class Command {
     }
 
     for (const dependency of this.dependencies) {
-      await dependency.runWhenDependenciesAreDone()
+      await dependency.runWhenDependenciesAreDone();
     }
     const dependenciesDone = this.dependencies.map(({ done }) => done);
     await Promise.all(dependenciesDone);
@@ -152,9 +154,9 @@ export class Command {
     }
     if (Array.isArray(commandResult)) {
       const postCommands: Command[] = commandResult;
-      return await run(postCommands).then((postCommandResults: CommandResult[]) =>
-        this.resolve(postCommandResults[postCommandResults.length])
-      );
+      return await run(postCommands).then((
+        postCommandResults: CommandResult[],
+      ) => this.resolve(postCommandResults[postCommandResults.length]));
     }
 
     this.doneDeferred.resolve(commandResult);
@@ -199,7 +201,7 @@ export class Sequential extends Command {
   async run(): Promise<RunResult> {
     let result: RunResult | undefined;
     for (const command of this.commands) {
-      console.error(`${this.name}: Running sequentially ${command.toString()}`);
+      console.error(`${this.name}: Running sequentially ${command.name}`);
       result = await command.runWhenDependenciesAreDone();
     }
     return result;

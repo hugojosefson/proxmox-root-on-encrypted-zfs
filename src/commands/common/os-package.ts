@@ -17,7 +17,7 @@ export abstract class AbstractPackageCommand<T extends PackageName>
   readonly packageName: T;
 
   protected constructor(name: string, packageName: T) {
-    super(name);
+    super(`${name}(${packageName})`);
     this.packageName = packageName;
   }
 

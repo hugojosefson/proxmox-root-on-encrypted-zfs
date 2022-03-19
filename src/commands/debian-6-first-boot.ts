@@ -1,32 +1,18 @@
-import { Command, Sequential } from "../model/command.ts";
+import { Command } from "../model/command.ts";
 import { debian5GrubInstallation } from "./debian-5-grub-installation.ts";
-import { inChrootCommand } from "./chroot-basic-system-environment.ts";
-import { ensureSuccessful } from "../os/exec.ts";
-import { ROOT } from "../os/user/root.ts";
 import { zfsRebootInstructions } from "./zfs-reboot-instructions.ts";
+// import { inChrootCommand } from "./in-chroot-command.ts";
+//
+// export const zfsSnapshotInstallation = inChrootCommand(
+//   "zfsSnapshotInstallation",
+//   `
+// zfs snapshot bpool/BOOT/debian@install
+// zfs snapshot rpool/ROOT/debian@install
+// `,
+// );
 
-export const zfsSnapshotInstallation = inChrootCommand(
-  "zfsSnapshotInstallation",
-  `
-zfs snapshot bpool/BOOT/debian@install
-zfs snapshot rpool/ROOT/debian@install
-`,
-);
-
-export const zfsUmount = Command.custom("zfsUmount").withRun(async () => {
-  await ensureSuccessful(ROOT, [
-    "bash",
-    `-euo`,
-    `pipefail`,
-    "-c",
-    `mount | grep -v zfs | tac | awk '/\\/mnt/ {print $3}' | xargs -i{} umount -lf {}`,
+export const debian6FirstBoot = Command.custom("debian6FirstBoot")
+  .withDependencies([
+    debian5GrubInstallation,
+    zfsRebootInstructions,
   ]);
-  await ensureSuccessful(ROOT, ["zpool", "export", "bpool"]);
-});
-
-export const debian6FirstBoot = new Sequential("debian6FirstBoot", [
-  debian5GrubInstallation,
-  // zfsSnapshotInstallation,
-  zfsUmount,
-  zfsRebootInstructions,
-]);

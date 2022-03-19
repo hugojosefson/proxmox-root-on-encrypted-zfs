@@ -4,7 +4,9 @@ import { networkInterface } from "./network-interface.ts";
 import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/root.ts";
-import { chrootBasicSystemEnvironment } from "./chroot-basic-system-environment.ts";
+import {
+  chrootBasicSystemEnvironment,
+} from "./chroot-basic-system-environment.ts";
 import { chrootZfs } from "./chroot-zfs.ts";
 import { chrootGrub } from "./chroot-grub.ts";
 import { chrootPasswdRoot } from "./chroot-passwd-root.ts";
@@ -25,7 +27,6 @@ export const debian4SystemConfiguration = Command.custom(
     hostname,
     networkInterface,
     aptSourcesListMnt,
-    chrootProxmox,
     chrootBasicSystemEnvironment,
     chrootZfs,
     chrootGrub,
@@ -34,4 +35,5 @@ export const debian4SystemConfiguration = Command.custom(
     chrootTmpfs,
     chrootSsh,
     chrootDropbearRemoteUnlocking,
+    chrootProxmox,
   ]);

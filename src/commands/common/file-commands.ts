@@ -109,7 +109,7 @@ async function backupFileUnlessContentAlready(
 /**
  * Creates a file. If it creates a backup of any existing file, its Promise resolves to that path. Otherwise to undefined.
  */
-async function createFile(
+export async function createFile(
   owner: PasswdEntry,
   path: FileSystemPath,
   contents: string,

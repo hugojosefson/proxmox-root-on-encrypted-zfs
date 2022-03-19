@@ -1,5 +1,5 @@
 import {
-  inChrootCommand,
+  chrootBasicSystemEnvironment,
   inChrootPrefix,
 } from "./chroot-basic-system-environment.ts";
 import { getFirstDisk } from "../os/find-disk.ts";
@@ -8,6 +8,12 @@ import { ensureSuccessful, ensureSuccessfulStdOut } from "../os/exec.ts";
 import { ROOT } from "../os/user/root.ts";
 import { LineInFile } from "./common/file-commands.ts";
 import { FileSystemPath } from "../model/dependency.ts";
+import { chrootZfs } from "./chroot-zfs.ts";
+import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
+import { hostname } from "./hostname.ts";
+import { networkInterface } from "./network-interface.ts";
+import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
+import { inChrootCommand } from "./in-chroot-command.ts";
 
 const chrootGrubInstallDosfsTools = inChrootCommand(
   "chrootGrubInstallDosfsTools",
@@ -132,4 +138,12 @@ export const chrootGrub = new Sequential("chrootGrub", [
   chrootGrubInstallGrub,
   chrootGrubInstallShimSigned,
   chrootGrubRemoveOsProber,
-]);
+])
+  .withDependencies([
+    debian3SystemInstallation,
+    hostname,
+    networkInterface,
+    aptSourcesListMnt,
+    chrootBasicSystemEnvironment,
+    chrootZfs,
+  ]);

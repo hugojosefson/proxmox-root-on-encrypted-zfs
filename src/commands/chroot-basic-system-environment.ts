@@ -7,6 +7,7 @@ import { networkInterface } from "./network-interface.ts";
 import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { config } from "../config.ts";
+import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
 
 export function inChrootPrefix(cmds: string): string[] {
   return [
@@ -54,18 +55,13 @@ const chrootMount = (paths: string[]) =>
       aptSourcesListMnt,
     ]);
 
-export function inChrootCommand(
+function inChrootCommand2(
   name: string,
   cmds: string,
   options?: ExecOptions,
-  skipDependencyOnChrootBasicSystemEnvironment = false,
 ): Command {
   return Command.custom(`inChrootCommand(${name})`)
-    .withDependencies([
-      skipDependencyOnChrootBasicSystemEnvironment
-        ? chrootMount(["/dev", "/proc", "/sys"])
-        : chrootBasicSystemEnvironment,
-    ])
+    .withDependencies([chrootMount(["/dev", "/proc", "/sys"])])
     .withLocks(
       cmds.includes("apt") ? [FileSystemPath.of(ROOT, "/mnt/var/lib/apt")] : [],
     )
@@ -73,8 +69,7 @@ export function inChrootCommand(
       await ensureSuccessful(ROOT, inChrootPrefix(cmds), options);
     });
 }
-
-export const chrootBasicSystemEnvironment = inChrootCommand(
+export const chrootBasicSystemEnvironment = inChrootCommand2(
   "chrootBasicSystemEnvironment",
   `
 ln -sf /proc/self/mounts /etc/mtab
@@ -92,6 +87,10 @@ apt install -y console-setup locales
 dpkg-reconfigure -f noninteractive locales tzdata keyboard-configuration console-setup
 
 `,
-  undefined,
-  true,
-);
+)
+  .withDependencies([
+    debian3SystemInstallation,
+    hostname,
+    networkInterface,
+    aptSourcesListMnt,
+  ]);
