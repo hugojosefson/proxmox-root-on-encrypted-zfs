@@ -29,6 +29,7 @@ function getDependencyPairs_(
 }
 const getDependencyPairs: typeof getDependencyPairs_ = memoize(
   getDependencyPairs_,
+  { cacheKey: (command: Command) => JSON.stringify(command) },
 );
 
 type CommandForLog = {
