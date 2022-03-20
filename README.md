@@ -58,10 +58,10 @@ curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encryp
 
 sudo  NON_INTERACTIVE=true \
       VERBOSE=true \
-      DISK_ENCRYPTION_PASSWORD=asdasdasd \
-      DISKS=/dev/vda \
-      ROOT_PASSWORD=rootpass \
       FQDN=proxymix.example.com \
+      DISKS=/dev/vda,/dev/vdb,/dev/vdc \
+      DISK_ENCRYPTION_PASSWORD=asdasdasd \
+      ROOT_PASSWORD=rootpass \
       ROOT_AUTHORIZED_KEYS_URL=https://github.com/hugojosefson.keys \
       /tmp/deno-range*/bin/deno run --reload=https://raw.githubusercontent.com --unstable --allow-all \
         https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/main/src/cli.ts \
