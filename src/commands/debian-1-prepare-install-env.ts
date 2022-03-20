@@ -5,8 +5,9 @@ import { REFRESH_OS_PACKAGES } from "./refresh-os-packages.ts";
 
 export const debian1PrepareInstallEnv = Command.custom(
   "debian1PrepareInstallEnv",
-).withDependencies([
-  REFRESH_OS_PACKAGES,
-  gsettings,
-  ...["debootstrap", "gdisk", "zfsutils-linux"].map(InstallOsPackage.of),
-]);
+)
+  .withDependencies([
+    REFRESH_OS_PACKAGES,
+    gsettings,
+    ...["debootstrap", "gdisk", "zfsutils-linux"].map(InstallOsPackage.of),
+  ]);

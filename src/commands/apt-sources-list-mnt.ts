@@ -2,8 +2,6 @@ import { CreateFile } from "./common/file-commands.ts";
 import { ROOT } from "../os/user/root.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { readRelativeFile } from "../os/read-relative-file.ts";
-import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
-import { hostname } from "./hostname.ts";
 import { networkInterface } from "./network-interface.ts";
 
 export const aptSourcesListMnt = new CreateFile(
@@ -14,4 +12,5 @@ export const aptSourcesListMnt = new CreateFile(
     import.meta.url,
   ),
   false,
-).withDependencies([debian3SystemInstallation, hostname, networkInterface]);
+)
+  .withDependencies([networkInterface]);

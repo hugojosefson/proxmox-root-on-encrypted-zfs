@@ -1,18 +1,11 @@
-import {
-  chrootBasicSystemEnvironment,
-  inChrootPrefix,
-} from "./chroot-basic-system-environment.ts";
+import { inChrootPrefix } from "./chroot-basic-system-environment.ts";
 import { getFirstDisk } from "../os/find-disk.ts";
-import { Command, Sequential } from "../model/command.ts";
+import { Command } from "../model/command.ts";
 import { ensureSuccessful, ensureSuccessfulStdOut } from "../os/exec.ts";
 import { ROOT } from "../os/user/root.ts";
 import { LineInFile } from "./common/file-commands.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { chrootZfs } from "./chroot-zfs.ts";
-import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
-import { hostname } from "./hostname.ts";
-import { networkInterface } from "./network-interface.ts";
-import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
 import { inChrootCommand } from "./in-chroot-command.ts";
 
 const chrootGrubInstallDosfsTools = inChrootCommand(
@@ -27,7 +20,8 @@ const chrootGrubInstallDosfsTools = inChrootCommand(
       );
       return true;
     },
-  ]);
+  ])
+  .withDependencies([chrootZfs]);
 
 const chrootGrubMkfsEfiPart2 = inChrootCommand(
   "chrootGrubMkfsEfiPart2",
@@ -41,7 +35,8 @@ const chrootGrubMkfsEfiPart2 = inChrootCommand(
       );
       return true;
     },
-  ]);
+  ])
+  .withDependencies([chrootGrubInstallDosfsTools]);
 
 const chrootGrubMkdirBootEfi = inChrootCommand(
   "chrootGrubMkdirBootEfi",
@@ -55,23 +50,26 @@ const chrootGrubMkdirBootEfi = inChrootCommand(
       );
       return true;
     },
-  ]);
+  ])
+  .withDependencies([chrootGrubMkfsEfiPart2]);
 
-const chrootGrubLineInFstab = Command.custom("chrootGrubLineInFstab").withRun(
-  async (): Promise<[Command]> => {
-    const uuid = await ensureSuccessfulStdOut(ROOT, [
-      ..."blkid -s UUID -o value".split(" "),
-      await getFirstDisk() + "-part2",
-    ]);
-    return [
-      new LineInFile(
-        ROOT,
-        FileSystemPath.of(ROOT, "/mnt/etc/fstab"),
-        `/dev/disk/by-uuid/${uuid} /boot/efi vfat defaults 0 0`,
-      ),
-    ];
-  },
-);
+const chrootGrubLineInFstab = Command.custom("chrootGrubLineInFstab")
+  .withRun(
+    async (): Promise<[Command]> => {
+      const uuid = await ensureSuccessfulStdOut(ROOT, [
+        ..."blkid -s UUID -o value".split(" "),
+        await getFirstDisk() + "-part2",
+      ]);
+      return [
+        new LineInFile(
+          ROOT,
+          FileSystemPath.of(ROOT, "/mnt/etc/fstab"),
+          `/dev/disk/by-uuid/${uuid} /boot/efi vfat defaults 0 0`,
+        ),
+      ];
+    },
+  )
+  .withDependencies([chrootGrubMkdirBootEfi]);
 
 const chrootGrubMountBootEfi = inChrootCommand(
   "chrootGrubMountBootEfi",
@@ -85,7 +83,8 @@ const chrootGrubMountBootEfi = inChrootCommand(
       );
       return true;
     },
-  ]);
+  ])
+  .withDependencies([chrootGrubLineInFstab]);
 
 const chrootGrubInstallGrub = inChrootCommand(
   "chrootGrubInstallGrub",
@@ -99,7 +98,8 @@ const chrootGrubInstallGrub = inChrootCommand(
       );
       return true;
     },
-  ]);
+  ])
+  .withDependencies([chrootGrubMountBootEfi]);
 
 const chrootGrubInstallShimSigned = inChrootCommand(
   "chrootGrubInstallShimSigned",
@@ -113,7 +113,8 @@ const chrootGrubInstallShimSigned = inChrootCommand(
       );
       return true;
     },
-  ]);
+  ])
+  .withDependencies([chrootGrubInstallGrub]);
 
 const chrootGrubRemoveOsProber = inChrootCommand(
   "chrootGrubRemoveOsProber",
@@ -127,23 +128,8 @@ const chrootGrubRemoveOsProber = inChrootCommand(
       );
       return true;
     },
-  ]);
+  ])
+  .withDependencies([chrootGrubInstallShimSigned]);
 
-export const chrootGrub = new Sequential("chrootGrub", [
-  chrootGrubInstallDosfsTools,
-  chrootGrubMkfsEfiPart2,
-  chrootGrubMkdirBootEfi,
-  chrootGrubLineInFstab,
-  chrootGrubMountBootEfi,
-  chrootGrubInstallGrub,
-  chrootGrubInstallShimSigned,
-  chrootGrubRemoveOsProber,
-])
-  .withDependencies([
-    debian3SystemInstallation,
-    hostname,
-    networkInterface,
-    aptSourcesListMnt,
-    chrootBasicSystemEnvironment,
-    chrootZfs,
-  ]);
+export const chrootGrub = Command.custom("chrootGrub")
+  .withDependencies([chrootGrubRemoveOsProber]);

@@ -9,22 +9,14 @@ import { config } from "../config.ts";
 import { ipRegex, netmask } from "../deps.ts";
 import { usageAndThrow } from "../usage.ts";
 import { inChrootCommand } from "./in-chroot-command.ts";
-import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
-import { hostname } from "./hostname.ts";
-import { networkInterface } from "./network-interface.ts";
-import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
-import { chrootBasicSystemEnvironment } from "./chroot-basic-system-environment.ts";
-import { chrootZfs } from "./chroot-zfs.ts";
-import { chrootGrub } from "./chroot-grub.ts";
-import { chrootPasswdRoot } from "./chroot-passwd-root.ts";
-import { chrootZfsBpool } from "./chroot-zfs-bpool.ts";
-import { chrootTmpfs } from "./chroot-tmpfs.ts";
+import { Command } from "../model/command.ts";
 import { chrootSsh } from "./chroot-ssh.ts";
 
 const chrootInstallDropbear = inChrootCommand(
   "chrootInstallDropbear",
   "apt install -y --no-install-recommends dropbear-initramfs",
-);
+)
+  .withDependencies([chrootSsh]);
 
 const chrootWriteDropbearAuthorizedKeys = new CreateFile(
   ROOT,
@@ -73,29 +65,15 @@ const chrootWriteDropbearNetworkConfig = new LineInFile(
   FileSystemPath.of(ROOT, "/mnt/etc/initramfs-tools/initramfs.conf"),
   initramfsIpLine(config.INITRAMFS_IP),
 )
-  .withDependencies([chrootInstallDropbear]);
+  .withDependencies([chrootCleanupDropbearAuthorizedKeys]);
 
 const chrootUpdateInitramfs = inChrootCommand(
   "chrootUpdateInitramfs",
   "update-initramfs -u -k all",
 )
-  .withDependencies([
-    debian3SystemInstallation,
-    hostname,
-    networkInterface,
-    aptSourcesListMnt,
-    chrootBasicSystemEnvironment,
-    chrootZfs,
-    chrootGrub,
-    chrootPasswdRoot,
-    chrootZfsBpool,
-    chrootTmpfs,
-    chrootSsh,
-  ]);
+  .withDependencies([chrootWriteDropbearNetworkConfig]);
 
-export const chrootDropbearRemoteUnlocking = chrootUpdateInitramfs
-  .withDependencies([
-    chrootWriteDropbearAuthorizedKeys,
-    chrootWriteDropbearNetworkConfig,
-    chrootCleanupDropbearAuthorizedKeys,
-  ]);
+export const chrootDropbearRemoteUnlocking = Command.custom(
+  "chrootDropbearRemoteUnlocking",
+)
+  .withDependencies([chrootUpdateInitramfs]);

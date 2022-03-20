@@ -1,6 +1,5 @@
 import { debian4SystemConfiguration } from "./debian-4-system-configuration.ts";
 import { existsPath } from "./common/file-commands.ts";
-import { chrootGrub } from "./chroot-grub.ts";
 import { inChrootCommand } from "./in-chroot-command.ts";
 
 export const debian5GrubInstallation = inChrootCommand(
@@ -38,7 +37,7 @@ sed -E 's|/mnt/?|/|' -i /etc/zfs/zfs-list.cache/?pool
 
 `,
 )
-  .withDependencies([debian4SystemConfiguration, chrootGrub])
+  .withDependencies([debian4SystemConfiguration])
   .withSkipIfAll([
     () => debian4SystemConfiguration.shouldSkip(),
     () => existsPath("/etc/zfs/zfs-list.cache/bpool".split("/")),

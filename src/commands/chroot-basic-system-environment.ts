@@ -49,11 +49,9 @@ const chrootMount = (paths: string[]) =>
         })
     ),
   )
-    .withDependencies([
-      hostname,
-      networkInterface,
-      aptSourcesListMnt,
-    ]);
+    .withDependencies([aptSourcesListMnt]);
+
+const chrootMountCommand = chrootMount(["/dev", "/proc", "/sys"]);
 
 function inChrootCommand2(
   name: string,
@@ -61,7 +59,7 @@ function inChrootCommand2(
   options?: ExecOptions,
 ): Command {
   return Command.custom(`inChrootCommand(${name})`)
-    .withDependencies([chrootMount(["/dev", "/proc", "/sys"])])
+    .withDependencies([chrootMountCommand])
     .withLocks(
       cmds.includes("apt") ? [FileSystemPath.of(ROOT, "/mnt/var/lib/apt")] : [],
     )
@@ -87,10 +85,4 @@ apt install -y console-setup locales
 dpkg-reconfigure -f noninteractive locales tzdata keyboard-configuration console-setup
 
 `,
-)
-  .withDependencies([
-    debian3SystemInstallation,
-    hostname,
-    networkInterface,
-    aptSourcesListMnt,
-  ]);
+);

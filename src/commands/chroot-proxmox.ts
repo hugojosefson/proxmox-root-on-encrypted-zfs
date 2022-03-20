@@ -1,16 +1,5 @@
 import { Command } from "../model/command.ts";
-import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
-import { hostname } from "./hostname.ts";
-import { networkInterface } from "./network-interface.ts";
-import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
 import { chrootBasicSystemEnvironment } from "./chroot-basic-system-environment.ts";
-import { chrootZfs } from "./chroot-zfs.ts";
-import { chrootGrub } from "./chroot-grub.ts";
-import { chrootPasswdRoot } from "./chroot-passwd-root.ts";
-import { chrootZfsBpool } from "./chroot-zfs-bpool.ts";
-import { chrootTmpfs } from "./chroot-tmpfs.ts";
-import { chrootSsh } from "./chroot-ssh.ts";
-import { chrootDropbearRemoteUnlocking } from "./chroot-dropbear-remote-unlocking.ts";
 import { inChrootCommand } from "./in-chroot-command.ts";
 
 export const chrootProxmoxPrepare = inChrootCommand(
@@ -28,19 +17,6 @@ apt full-upgrade -y
 apt install -y open-iscsi postfix # proxmox-ve
 `,
 );
+
 export const chrootProxmox = Command.custom("chrootProxmox")
-  .withDependencies([
-    debian3SystemInstallation,
-    hostname,
-    networkInterface,
-    aptSourcesListMnt,
-    chrootBasicSystemEnvironment,
-    chrootZfs,
-    chrootGrub,
-    chrootPasswdRoot,
-    chrootZfsBpool,
-    chrootTmpfs,
-    chrootSsh,
-    chrootDropbearRemoteUnlocking,
-    chrootProxmoxPrepare,
-  ]);
+  .withDependencies([chrootBasicSystemEnvironment]);
