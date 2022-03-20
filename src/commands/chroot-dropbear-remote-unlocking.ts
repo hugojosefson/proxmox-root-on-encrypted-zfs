@@ -37,10 +37,6 @@ const chrootCleanupDropbearAuthorizedKeys = inChrootCommand(
   .withDependencies([chrootWriteDropbearAuthorizedKeys]);
 
 function initramfsIpLine(input: string): string {
-  if (input === "dhcp" || input === "IP=dhcp") {
-    return "IP=dhcp";
-  }
-
   if (/^IP=/.test(input)) {
     return input;
   }

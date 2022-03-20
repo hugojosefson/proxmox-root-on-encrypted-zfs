@@ -3,6 +3,7 @@ import { defer, Deferred } from "../os/defer.ts";
 import { run } from "../run.ts";
 import { Lock, LockReleaser } from "./dependency.ts";
 import { usageAndThrow } from "../usage.ts";
+import { resolveValue } from "../fn.ts";
 
 export interface CommandResult {
   status: Deno.ProcessStatus;
@@ -49,81 +50,93 @@ export class Command {
 
   private _shouldSkip: boolean | undefined = undefined;
   async shouldSkip(): Promise<boolean> {
-    if (typeof this._shouldSkip === "boolean") {
-      return this._shouldSkip;
+    if (this._shouldSkip === true) {
+      if (!this.doneDeferred.isDone) {
+        this.doneDeferred.resolve(this.alreadyDoneResult());
+      }
+      return true;
+    }
+
+    if (this._shouldSkip === false) {
+      return false;
     }
 
     if (this.skipIfAll.length === 0) {
       this._shouldSkip = false;
-      return this._shouldSkip;
+      return false;
     }
 
     try {
-      await Promise.all(
-        this.skipIfAll.map(async (predicate) => {
-          if (await predicate()) {
-            return;
-          }
-          throw new Error(
-            `Let's stop wasting time on any more predicates. We have already decided to go ahead and run this command.`,
-          );
-        }),
-      );
+      for (const predicate of this.skipIfAll) {
+        const shouldSkipBecauseOfThisPredicate: boolean = await resolveValue(
+          predicate(),
+        );
+        if (!shouldSkipBecauseOfThisPredicate) {
+          this._shouldSkip = false;
+          return false;
+        }
+      }
       this._shouldSkip = true;
-      return this._shouldSkip;
-    } catch (_ignore) {
-      // Some predicate failed, so we should run the command.
+      if (!this.doneDeferred.isDone) {
+        this.doneDeferred.resolve(this.alreadyDoneResult());
+      }
+      return true;
+    } catch (e) {
+      console.warn(`Some predicate failed, so we should run the command.`, e);
     }
     this._shouldSkip = false;
     return this._shouldSkip;
   }
 
   async runWhenDependenciesAreDone(): Promise<CommandResult> {
-    if (this.doneDeferred.isDone) {
-      return this.done;
-    }
-
-    for (const dependency of this.dependencies) {
-      await dependency.runWhenDependenciesAreDone();
-    }
-    const dependenciesDone = this.dependencies.map(({ done }) => done);
-    await Promise.all(dependenciesDone);
-
-    if (await this.shouldSkip()) {
-      config.VERBOSE && console.error(`Skipping command `, this.toString());
-      const runResult: CommandResult = {
-        status: { success: true, code: 0 },
-        stdout: `Already done: ${this.toString()}`,
-        stderr: "",
-      } as const;
-      this.doneDeferred.resolve(runResult);
-    }
-
-    if (this.doneDeferred.isDone) {
-      return this.done;
-    }
-
-    config.VERBOSE && console.error(`Running command `, this.toString());
-
-    const lockReleaserPromises: Promise<LockReleaser>[] = this.locks
-      .map((lock) => lock.take());
-
-    const lockReleasers: LockReleaser[] = await Promise.all(
-      lockReleaserPromises,
-    );
-
     try {
-      const innerResult: RunResult = await (this.run().catch(
-        this.doneDeferred.reject,
-      ));
-      config.VERBOSE &&
-        console.error(`Running command ${this.toString()} DONE.`);
-      return this.resolve(innerResult);
-    } finally {
-      for (const releaseTheLock of lockReleasers) {
-        releaseTheLock();
+      if (this.doneDeferred.isDone) {
+        return this.done;
       }
+
+      for (const dependency of this.dependencies) {
+        await dependency.runWhenDependenciesAreDone();
+      }
+      const dependenciesDone = this.dependencies.map(({ done }) => done);
+      await Promise.all(dependenciesDone);
+
+      if (await this.shouldSkip()) {
+        config.VERBOSE && console.error(`Skipping command `, this.toString());
+      }
+
+      if (this.doneDeferred.isDone) {
+        return this.done;
+      }
+
+      config.VERBOSE && console.error(`Running command `, this.toString());
+
+      const lockReleaserPromises: Promise<LockReleaser>[] = this.locks
+        .map(async (lock) => await lock.take());
+
+      try {
+        const innerResult: RunResult = await (this.run().catch(
+          this.doneDeferred.reject,
+        ));
+        config.VERBOSE &&
+          console.error(`Running command ${this.toString()} DONE.`);
+        return this.resolve(innerResult);
+      } finally {
+        await Promise.all(
+          lockReleaserPromises.map(async (releaserPromise) =>
+            (await releaserPromise)()
+          ),
+        );
+      }
+    } catch (e) {
+      if (!this.doneDeferred.isDone) {
+        this.doneDeferred.reject(e);
+      }
+      return this.done;
     }
+    if (!this.doneDeferred.isDone) {
+      this.doneDeferred.resolve(this.strangelyDoneResult());
+    }
+    return this.done;
   }
 
   static custom(name: string): Command {
@@ -188,6 +201,22 @@ export class Command {
   withSkipIfAll(predicates: Array<Predicate>): Command {
     this.skipIfAll.push(...predicates);
     return this;
+  }
+
+  private alreadyDoneResult(): CommandResult {
+    return {
+      status: { success: true, code: 0 },
+      stdout: `Already done: ${this.toString()}`,
+      stderr: "",
+    };
+  }
+
+  private strangelyDoneResult(): CommandResult {
+    return {
+      status: { success: true, code: 0 },
+      stdout: `Strangely done: ${this.toString()}`,
+      stderr: "",
+    };
   }
 }
 

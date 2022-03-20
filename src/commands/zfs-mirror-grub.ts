@@ -3,6 +3,7 @@ import { getDisksExceptFirst, getFirstDisk } from "../os/find-disk.ts";
 import { ensureSuccessful } from "../os/exec.ts";
 import { ROOT } from "../os/user/root.ts";
 import { debian5GrubInstallation } from "./debian-5-grub-installation.ts";
+import { InstallOsPackage } from "./common/os-package.ts";
 
 export const zfsMirrorGrub = Command.custom("zfsMirrorGrub")
   .withRun(async () => {
@@ -31,4 +32,7 @@ export const zfsMirrorGrub = Command.custom("zfsMirrorGrub")
       ]);
     }
   })
-  .withDependencies([debian5GrubInstallation]);
+  .withDependencies([
+    debian5GrubInstallation,
+    InstallOsPackage.of("efibootmgr"),
+  ]);

@@ -20,9 +20,6 @@ function getHostnames() {
 }
 
 function getIp(): string {
-  if (config.IP === "dhcp") {
-    return "127.0.1.1";
-  }
   return netmask(config.IP).ip;
 }
 

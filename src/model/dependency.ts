@@ -12,7 +12,11 @@ export class Lock {
   async take(): Promise<LockReleaser> {
     const previousLock = this.currentLock.promise;
     this.currentLock = defer();
-    await previousLock;
+    try {
+      await previousLock;
+    } catch (e) {
+      console.error(`ERROR: lock rejected`, e);
+    }
     return this.currentLock.resolve;
   }
 }

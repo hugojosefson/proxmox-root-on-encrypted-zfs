@@ -1,6 +1,7 @@
 import { Command } from "../model/command.ts";
 import { ensureSuccessful } from "../os/exec.ts";
 import { ROOT } from "../os/user/root.ts";
+import { chrootProxmoxPrepare } from "./chroot-proxmox.ts";
 import { zfsMirrorGrub } from "./zfs-mirror-grub.ts";
 
 export const zfsUmount = Command.custom("zfsUmount")
@@ -14,4 +15,4 @@ export const zfsUmount = Command.custom("zfsUmount")
     ]);
     await ensureSuccessful(ROOT, ["zpool", "export", "bpool"]);
   })
-  .withDependencies([zfsMirrorGrub]);
+  .withDependencies([zfsMirrorGrub, chrootProxmoxPrepare]);

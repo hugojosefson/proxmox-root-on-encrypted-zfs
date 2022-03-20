@@ -14,7 +14,8 @@ echo '7fb03ec8a1675723d2853b84aa4fdb49a46a3bb72b9951361488bfd19b29aab0a789a4f8c7
 
 apt update
 apt full-upgrade -y
-apt install -y open-iscsi postfix # proxmox-ve
+apt install -y open-iscsi postfix
+apt install -y --download-only proxmox-ve
 `,
 );
 

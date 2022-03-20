@@ -6,6 +6,7 @@ export const zfsRebootInstructions = Command.custom("zfsRebootInstructions")
   .withRun(() => {
     return Promise.resolve(`
 
+=============================================================
 Debian is installed.
 
 Now, reboot.
@@ -15,7 +16,19 @@ When you get to the initramfs prompt, run these two commands:
   zpool import -fa
   zpool export -a
 
-Then reboot again, and you will be prompted for the zfs encryption key.
+Then reboot again.
+
+You will be prompted for the zfs encryption key after the
+next reboot.
+
+Log in as root, then continue at
+https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_11_Bullseye#Install_Proxmox_VE_packages
+
+=============================================================
+
 `);
   })
-  .withDependencies([debian8DisableLogCompression, zfsUmount]);
+  .withDependencies([
+    debian8DisableLogCompression,
+    zfsUmount,
+  ]);

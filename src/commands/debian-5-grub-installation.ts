@@ -39,7 +39,7 @@ sed -E 's|/mnt/?|/|' -i /etc/zfs/zfs-list.cache/?pool
 )
   .withDependencies([debian4SystemConfiguration])
   .withSkipIfAll([
-    () => debian4SystemConfiguration.shouldSkip(),
+    async () => await debian4SystemConfiguration.shouldSkip(),
     () => existsPath("/etc/zfs/zfs-list.cache/bpool".split("/")),
     () => existsPath("/etc/zfs/zfs-list.cache/rpool".split("/")),
     async () =>

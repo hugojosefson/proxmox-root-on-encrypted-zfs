@@ -22,7 +22,7 @@ export const destroyAllPoolsAndDisks = Command.custom("destroyAllPoolsAndDisks")
       "-c",
       `
 mount | grep -v zfs | tac | awk '/\\/mnt/ {print $3}' | xargs -i{} umount -lf {}
-zpool export -a
+zpool export -af
 
 umount /mnt/* || true
 rm -rf /mnt/debootstrap || true

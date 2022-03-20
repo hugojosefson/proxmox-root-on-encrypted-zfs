@@ -21,10 +21,7 @@ auto lo
 iface lo inet loopback
 
     `;
-    const nic = config.IP === "dhcp"
-      ? `auto ${device}
-iface ${device} inet dhcp`
-      : `auto ${device}
+    const nic = `auto ${device}
 iface ${device} inet static
         address ${netmask(config.IP).ip}/${netmask(config.IP).bitmask}
         gateway ${netmask(config.IP).gateway}

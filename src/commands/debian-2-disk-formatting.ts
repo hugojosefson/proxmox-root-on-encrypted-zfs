@@ -1,10 +1,13 @@
 import { Command } from "../model/command.ts";
-import { ensureSuccessful, ensureSuccessfulStdOut } from "../os/exec.ts";
+import {
+  ensureSuccessful,
+  ensureSuccessfulStdOut,
+  isSuccessful,
+} from "../os/exec.ts";
 import { config } from "../config.ts";
 import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/root.ts";
-import { existsPath } from "./common/file-commands.ts";
 import { getDisks, getFirstDisk } from "../os/find-disk.ts";
 import { pascalCase } from "https://deno.land/x/case@v2.1.0/mod.ts";
 import {
@@ -26,15 +29,24 @@ const PARTITION_TYPE = {
 type Offset = "0" | "1M";
 type PartitionSize = Stringish | Deferred<string>;
 
-function resolveSize(size: PartitionSize): Promise<string> {
-  if (isDeferred(size)) {
-    return Promise.resolve("0");
+async function resolvePartitionSize(
+  partitionSize: PartitionSize,
+): Promise<string> {
+  if (isDeferred(partitionSize)) {
+    return "0";
   }
-  if (typeof size === "string" || isPromise(size)) {
-    return resolveValue(size);
+  if (typeof partitionSize === "string" || isPromise(partitionSize)) {
+    const resolved: string = await resolveValue(partitionSize);
+    const asNumber = Number(resolved);
+    if (!isNaN(asNumber)) {
+      return `+${Math.trunc(asNumber / 1024)}K`;
+    }
+    return resolved;
   }
   throw new Error(
-    `size was neither Deferred, Promise, nor string: ${JSON.stringify(size)}`,
+    `size was neither Deferred, Promise, nor string: ${
+      JSON.stringify(partitionSize)
+    }`,
   );
 }
 
@@ -42,63 +54,70 @@ function partition(
   disk: string,
   partitionNumber: PartitionNumber,
   type: PartitionType = PARTITION_TYPE.ZFS_OTHER,
-  size: PartitionSize,
+  partitionSize: PartitionSize,
   name: string | undefined = type === PARTITION_TYPE.EFI
     ? "efi"
     : (type === PARTITION_TYPE.ZFS_BOOT ? "boot" : undefined),
   offset: Offset = type === PARTITION_TYPE.EFI ? "1M" : "0",
 ) {
-  const commandNameSuffix = typeof name === "string"
-    ? name
-    : (typeof type === "undefined" ? "" : pascalCase(`${type}`));
-  const commandName = `zfsPartition${partitionNumber}${commandNameSuffix}`;
-  const partitionPath = `${disk}-part${partitionNumber}`;
-  return Command.custom(commandName)
-    .withLocks([FileSystemPath.of(ROOT, disk)])
-    .withDependencies([debian1PrepareInstallEnv])
-    .withSkipIfAll([
-      async () => await existsPath(partitionPath.split("/")),
-    ])
-    .withRun(async () => {
-      await ensureSuccessful(ROOT, ["sync"]);
-      await ensureSuccessful(ROOT, [
-        "sgdisk",
-        `--new=${partitionNumber}:${offset}:${await resolveSize(size)}`,
-        `--typecode=${partitionNumber}:${type}`,
-        disk,
-      ]);
-      await ensureSuccessful(ROOT, ["sync"]);
-      await ensureSuccessful(ROOT, ["sleep", "5"]);
-      if (isDeferred(size)) {
-        const partitionSize: number = await getDiskSize(partitionPath);
-        size.resolve(partitionSize);
+  try {
+    const commandNameSuffix = typeof name === "string"
+      ? pascalCase(name)
+      : (typeof type === "undefined" ? "" : pascalCase(`${type}`));
+    const commandName = `zfsPartition${partitionNumber}${commandNameSuffix}`;
+    const partitionPath = `${disk}-part${partitionNumber}`;
+    const command: Command = Command.custom(commandName)
+      .withLocks([FileSystemPath.of(ROOT, disk)])
+      .withDependencies([debian1PrepareInstallEnv])
+      .withSkipIfAll([
+        () => isSuccessful(ROOT, ["bash", "-ec", `[ -e ${partitionPath} ]`]),
+      ])
+      .withRun(async () => {
+        const resolvedPartitionSize = await resolvePartitionSize(partitionSize);
+        await ensureSuccessful(ROOT, [
+          "sgdisk",
+          `-n`,
+          `${partitionNumber}:${offset}:${resolvedPartitionSize}`,
+          `-t`,
+          `${partitionNumber}:${type}`,
+          disk,
+        ]);
+        await ensureSuccessful(ROOT, ["sleep", "5"]);
+        if (isDeferred(partitionSize)) {
+          partitionSize.resolve(await getDiskSize(partitionPath));
+        }
+      });
+    command.done.finally(async () => {
+      if (isDeferred(partitionSize) && !partitionSize.isDone) {
+        partitionSize.resolve(await getDiskSize(partitionPath));
       }
     });
+    return command;
+  } catch (e) {
+    if (isDeferred(partitionSize) && !partitionSize.isDone) {
+      partitionSize.reject(e);
+    }
+    throw e;
+  }
 }
 
 async function getDiskSize(disk: string): Promise<number> {
   const cmd = ["fdisk", "-l", "--bytes", disk];
   const output = await ensureSuccessfulStdOut(ROOT, cmd);
-  const firstLine = output.split("\n", 1)[0];
-  if (firstLine === null) {
-    throw new Error(
-      `ERROR: Could not figure out the size of disk ${disk}.\nOutput of ${cmd.toString()} was:\n${output}\n`,
-    );
-  }
   const regex = /\b([0-9]+) bytes\b/;
-  const matches = firstLine.match(regex);
+  const matches = output.match(regex);
   if (matches === null) {
     throw new Error(
-      `ERROR: Could not figure out the size of disk ${disk}.\nNo match (#1) for ${regex} found in: ${firstLine}`,
+      `ERROR: Could not figure out the size of disk ${disk}.\nNo match (#1) for ${regex} found in: ${output}`,
     );
   }
   const match = matches[1];
   if (typeof match === "undefined") {
     throw new Error(
-      `ERROR: Could not figure out the size of disk ${disk}.\nNo match (#2) for ${regex} found in: ${firstLine}`,
+      `ERROR: Could not figure out the size of disk ${disk}.\nNo match (#2) for ${regex} found in: ${output}`,
     );
   }
-  return Number(match[1]);
+  return Number(match);
 }
 
 interface DiskAndSize {
@@ -111,27 +130,37 @@ const NO_SMALLEST_DISK_FOUND: DiskAndSize = {
   size: Number.MAX_SAFE_INTEGER,
 } as const;
 
+console.log(`-----------------------------------------------1==========`);
 const disks: string[] = await getDisks();
+console.log({ disks });
 
+console.log(`-----------------------------------------------2==========`);
 const disksAndSizes: readonly DiskAndSize[] = await mapAsync(
   async (disk) => ({ disk, size: await getDiskSize(disk) }) as DiskAndSize,
   disks,
 );
+console.log({ disksAndSizes });
 
+console.log(`-----------------------------------------------3==========`);
 const smallestDiskAndSize: DiskAndSize = disksAndSizes.reduce(
   (smallestSoFar, compared) =>
     compared.size < smallestSoFar.size ? compared : smallestSoFar,
   NO_SMALLEST_DISK_FOUND,
 );
+console.log({ smallestDiskAndSize });
 
+console.log(`-----------------------------------------------4==========`);
 if (smallestDiskAndSize === NO_SMALLEST_DISK_FOUND) {
   throw new Error(
     `ERROR: No smallest disk found. The disks were: ${disks.toString()}`,
   );
 }
 
+console.log(`-----------------------------------------------5==========`);
 const largerDisks = disks.filter((disk) => disk !== smallestDiskAndSize.disk);
+console.log({ largerDisks });
 
+console.log(`-----------------------------------------------6==========`);
 export const zfsPartition2Efi = partition(
   await getFirstDisk(),
   2,
@@ -139,6 +168,7 @@ export const zfsPartition2Efi = partition(
   "+512M",
 );
 
+console.log(`-----------------------------------------------7==========`);
 export const zfsPartition3Boot = Command.custom("zfsPartition3Boot")
   .withDependencies(
     disks.map((disk) =>
@@ -160,16 +190,20 @@ export const zfsPartition3Boot = Command.custom("zfsPartition3Boot")
  * TODO: partition all other disks that size as BF01 for possible tank, or tank special vdev.
  */
 
+console.log(`-----------------------------------------------8==========`);
 const rootPartitionSize: Deferred<string> = defer<string>();
+
+console.log(`-----------------------------------------------9==========`);
 const zfsSmallestPartition4Root = partition(
   smallestDiskAndSize.disk,
   4,
   PARTITION_TYPE.ZFS_OTHER,
   rootPartitionSize,
-  `zfsPartition4Root on ${smallestDiskAndSize.disk}`,
+  `rootSmallest`,
 )
   .withDependencies([zfsPartition3Boot]);
 
+console.log(`----------------------------------------------10==========`);
 export const zfsPartition4Root = Command.custom("zfsPartition4Root")
   .withDependencies(
     largerDisks.map((disk) =>
@@ -184,12 +218,14 @@ export const zfsPartition4Root = Command.custom("zfsPartition4Root")
     ),
   );
 
+console.log(`----------------------------------------------11==========`);
 export const zfsPartitions = Command.custom("zfsPartitions")
   .withDependencies([
     debian1PrepareInstallEnv,
     zfsPartition4Root,
   ]);
 
+console.log(`----------------------------------------------12==========`);
 export const zfsBootPool = Command.custom("zfsBootPool")
   .withLocks(disks.map((disk) => FileSystemPath.of(ROOT, disk)))
   .withDependencies([

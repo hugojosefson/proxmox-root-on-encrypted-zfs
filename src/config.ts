@@ -20,6 +20,6 @@ export const config: Config = {
   ROOT_PASSWORD: await requireEnv("ROOT_PASSWORD"),
   ROOT_AUTHORIZED_KEYS: await requireEnv("ROOT_AUTHORIZED_KEYS"),
   FQDN: await requireEnv("FQDN"),
-  IP: Deno.env.get("IP") ?? "dhcp",
-  INITRAMFS_IP: Deno.env.get("INITRAMFS_IP") ?? Deno.env.get("IP") ?? "dhcp",
+  IP: await requireEnv("IP"),
+  INITRAMFS_IP: await requireEnv("INITRAMFS_IP", "IP"),
 };

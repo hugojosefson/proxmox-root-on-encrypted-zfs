@@ -47,7 +47,11 @@ export const getTargetUser: typeof _getTargetUser = memoize(_getTargetUser);
 const targetUserDefer: Deferred<PasswdEntry> = defer();
 export const targetUserPromise: Promise<PasswdEntry> = targetUserDefer.promise;
 setTimeout(() => {
-  getTargetUser().then(targetUserDefer.resolve, targetUserDefer.reject);
+  try {
+    getTargetUser().then(targetUserDefer.resolve, targetUserDefer.reject);
+  } catch (e) {
+    targetUserDefer.reject(e);
+  }
 }, 500);
 
 export async function getDbusSessionBusAddress() {

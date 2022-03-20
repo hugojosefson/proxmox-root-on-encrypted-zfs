@@ -131,15 +131,18 @@ export class ReplaceOsPackage extends Command {
   }
 
   async run(): Promise<RunResult> {
-    await ensureSuccessful(ROOT, [
-      "apt",
-      "purge",
-      "-y",
-      this.removePackageName,
-      this.installPackageName + "+",
-    ], { env: { DEBIAN_FRONTEND: "noninteractive" } }).catch(
-      this.doneDeferred.reject,
-    );
+    await ensureSuccessful(
+      ROOT,
+      [
+        "apt",
+        "purge",
+        "-y",
+        this.removePackageName,
+        this.installPackageName + "+",
+      ],
+      { env: { DEBIAN_FRONTEND: "noninteractive" } },
+    )
+      .catch(this.doneDeferred.reject);
 
     return `Replaced package ${this.removePackageName} with ${this.installPackageName}.`;
   }

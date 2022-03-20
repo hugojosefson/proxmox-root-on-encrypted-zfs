@@ -58,6 +58,7 @@ curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encryp
 
 sudo  NON_INTERACTIVE=true \
       VERBOSE=true \
+      IP=192.168.122.253/24 \
       FQDN=proxymix.example.com \
       DISKS=/dev/vda,/dev/vdb,/dev/vdc \
       DISK_ENCRYPTION_PASSWORD=asdasdasd \

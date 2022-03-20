@@ -1,5 +1,5 @@
 import { config } from "../config.ts";
-import { colorlog, memoize, PasswdEntry } from "../deps.ts";
+import { colorlog, PasswdEntry } from "../deps.ts";
 import { CommandResult } from "../model/command.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { getDbusSessionBusAddress } from "./user/target-user.ts";
@@ -63,7 +63,7 @@ async function runOptions(
   };
 }
 
-async function _ensureSuccessful(
+export async function ensureSuccessful(
   asUser: PasswdEntry,
   cmd: Array<string>,
   options: ExecOptions = {},
@@ -113,29 +113,28 @@ async function _ensureSuccessful(
     Deno.stderr,
     options.verbose,
   );
-  try {
-    const status: Deno.ProcessStatus = await process.status();
-    if (status.success) {
-      return {
-        status,
-        stdout: await stdoutPromise,
-        stderr: await stderrPromise,
-      };
-    }
-  } catch (_e) {
-    // ignore
+
+  const status: Deno.ProcessStatus = await process.status();
+  if (status.success) {
+    const result = {
+      cmd,
+      status,
+      stdout: await stdoutPromise,
+      stderr: await stderrPromise,
+    };
+    console.log(result);
+    return result;
+  } else {
+    const reason = {
+      cmd,
+      status: await process.status(),
+      stdout: await stdoutPromise,
+      stderr: await stderrPromise,
+    };
+    console.error(reason);
+    return Promise.reject(reason);
   }
-
-  return Promise.reject({
-    status: await process.status(),
-    stdout: await stdoutPromise,
-    stderr: await stderrPromise,
-  });
 }
-
-export const ensureSuccessful: typeof _ensureSuccessful = memoize(
-  _ensureSuccessful,
-);
 
 export const symlink = (
   owner: PasswdEntry,
