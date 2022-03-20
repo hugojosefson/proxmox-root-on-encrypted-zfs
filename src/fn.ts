@@ -1,3 +1,5 @@
+import { Deferred } from "./os/defer.ts";
+
 export const complement = <T>(fn: (t: T) => boolean): (t: T) => boolean =>
   (t: T) => !fn(t);
 
@@ -57,8 +59,21 @@ export function isPromise<T>(
   return typeof (maybePromise as PromiseLike<T>)?.then === "function";
 }
 
+export function isDeferred<T>(
+  maybeDeferred: Deferred<T> | unknown,
+): maybeDeferred is Deferred<T> {
+  const asDeferred = maybeDeferred as Deferred<T>;
+  return isPromise(asDeferred?.promise) &&
+    typeof asDeferred?.resolve === "function" &&
+    typeof asDeferred?.reject === "function" &&
+    typeof asDeferred?.isDone === "boolean";
+}
+
 export type Getter<T> = () => T | Promise<T>;
 export type Ish<T> = T | Promise<T> | Getter<T>;
+
+export type StringGetter = Getter<string>;
+export type Stringish = Ish<string>;
 
 export async function resolveValue<T>(x: Ish<T>): Promise<T> {
   if (typeof x === "function") {

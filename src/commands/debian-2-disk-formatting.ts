@@ -7,7 +7,14 @@ import { ROOT } from "../os/user/root.ts";
 import { existsPath } from "./common/file-commands.ts";
 import { getDisks, getFirstDisk } from "../os/find-disk.ts";
 import { pascalCase } from "https://deno.land/x/case@v2.1.0/mod.ts";
-import { mapAsync } from "../fn.ts";
+import {
+  isDeferred,
+  isPromise,
+  mapAsync,
+  resolveValue,
+  Stringish,
+} from "../fn.ts";
+import { defer, Deferred } from "../os/defer.ts";
 
 type PartitionNumber = 1 | 2 | 3 | 4 | 5;
 type PartitionType = "EF00" | "BF00" | "BF01";
@@ -17,20 +24,25 @@ const PARTITION_TYPE = {
   "ZFS_OTHER": "BF01",
 } as const;
 type Offset = "0" | "1M";
-type PartitionSize = string | (() => (string | Promise<string>));
+type PartitionSize = Stringish | Deferred<string>;
 
 function resolveSize(size: PartitionSize): Promise<string> {
-  if (typeof size === "string") {
-    return Promise.resolve(size);
+  if (isDeferred(size)) {
+    return Promise.resolve("0");
   }
-  return Promise.resolve(size());
+  if (typeof size === "string" || isPromise(size)) {
+    return resolveValue(size);
+  }
+  throw new Error(
+    `size was neither Deferred, Promise, nor string: ${JSON.stringify(size)}`,
+  );
 }
 
 function partition(
   disk: string,
   partitionNumber: PartitionNumber,
   type: PartitionType = PARTITION_TYPE.ZFS_OTHER,
-  size: PartitionSize = "0",
+  size: PartitionSize,
   name: string | undefined = type === PARTITION_TYPE.EFI
     ? "efi"
     : (type === PARTITION_TYPE.ZFS_BOOT ? "boot" : undefined),
@@ -40,11 +52,12 @@ function partition(
     ? name
     : (typeof type === "undefined" ? "" : pascalCase(`${type}`));
   const commandName = `zfsPartition${partitionNumber}${commandNameSuffix}`;
+  const partitionPath = `${disk}-part${partitionNumber}`;
   return Command.custom(commandName)
     .withLocks([FileSystemPath.of(ROOT, disk)])
     .withDependencies([debian1PrepareInstallEnv])
     .withSkipIfAll([
-      async () => await existsPath(`${disk}-part${partitionNumber}`.split("/")),
+      async () => await existsPath(partitionPath.split("/")),
     ])
     .withRun(async () => {
       await ensureSuccessful(ROOT, ["sync"]);
@@ -56,6 +69,10 @@ function partition(
       ]);
       await ensureSuccessful(ROOT, ["sync"]);
       await ensureSuccessful(ROOT, ["sleep", "5"]);
+      if (isDeferred(size)) {
+        const partitionSize: number = await getDiskSize(partitionPath);
+        size.resolve(partitionSize);
+      }
     });
 }
 
@@ -89,17 +106,17 @@ interface DiskAndSize {
   size: number;
 }
 
+const NO_SMALLEST_DISK_FOUND: DiskAndSize = {
+  disk: "NO_SMALLEST_DISK_FOUND",
+  size: Number.MAX_SAFE_INTEGER,
+} as const;
+
 const disks: string[] = await getDisks();
 
 const disksAndSizes: readonly DiskAndSize[] = await mapAsync(
   async (disk) => ({ disk, size: await getDiskSize(disk) }) as DiskAndSize,
   disks,
 );
-
-const NO_SMALLEST_DISK_FOUND: DiskAndSize = {
-  disk: "NO_SMALLEST_DISK_FOUND",
-  size: Number.MAX_SAFE_INTEGER,
-} as const;
 
 const smallestDiskAndSize: DiskAndSize = disksAndSizes.reduce(
   (smallestSoFar, compared) =>
@@ -137,26 +154,33 @@ export const zfsPartition3Boot = Command.custom("zfsPartition3Boot")
   );
 
 /**
- * TODO: fill out the smallest disk.
- * TODO: get the size of its Root partition.
- * TODO: partition all other disks that size as BF00 for rpool mirror.
- *
- * TODO: if there is space remaining on at least two drives,
+ * TODO: after partitioning root, if there is space remaining on at least two drives,
  * TODO: fill out the smallest disk.
  * TODO: get the size of that partition.
  * TODO: partition all other disks that size as BF01 for possible tank, or tank special vdev.
  */
+
+const rootPartitionSize: Deferred<string> = defer<string>();
+const zfsSmallestPartition4Root = partition(
+  smallestDiskAndSize.disk,
+  4,
+  PARTITION_TYPE.ZFS_OTHER,
+  rootPartitionSize,
+  `zfsPartition4Root on ${smallestDiskAndSize.disk}`,
+)
+  .withDependencies([zfsPartition3Boot]);
+
 export const zfsPartition4Root = Command.custom("zfsPartition4Root")
   .withDependencies(
-    disks.map((disk) =>
+    largerDisks.map((disk) =>
       partition(
         disk,
         4,
         PARTITION_TYPE.ZFS_OTHER,
-        "0",
+        rootPartitionSize.promise,
         `root on ${disk}`,
       )
-        .withDependencies([zfsPartition3Boot])
+        .withDependencies([zfsSmallestPartition4Root])
     ),
   );
 

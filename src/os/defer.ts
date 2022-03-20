@@ -14,7 +14,7 @@ export interface Deferred<T> {
   isDone: boolean;
 }
 
-export const defer = <T>(): Deferred<T> => {
+export function defer<T>(): Deferred<T> {
   let resolve: ResolveFn<T>;
   let reject: RejectFn;
 
@@ -34,7 +34,7 @@ export const defer = <T>(): Deferred<T> => {
   // @ts-ignore: Promise constructor argument is called immediately, so our resolve and reject variables have been initialised by the time we get here.
   const deferred = { promise, resolve, reject, isDone: false };
   return deferred;
-};
+}
 
 export function deferAlreadyResolvedVoid(): Deferred<void> {
   const deferred: Deferred<void> = defer<void>();
