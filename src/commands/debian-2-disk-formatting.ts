@@ -54,6 +54,16 @@ export const zfsPartition3Boot = Command.custom("zfsPartition3Boot")
     }
   });
 
+/**
+ * TODO: fill out the smallest disk.
+ * TODO: get the size of that partition.
+ * TODO: partition all other disks that size as BF00 for rpool mirror.
+ *
+ * TODO: if there is space remaining on at least two drives,
+ * TODO: fill out the smallest disk.
+ * TODO: get the size of that partition.
+ * TODO: partition all other disks that size as BF01 for possible tank, or tank special vdev.
+ */
 export const zfsPartition4Root = Command.custom("zfsPartition4Root")
   .withLocks((await getDisks()).map((disk) => FileSystemPath.of(ROOT, disk)))
   .withDependencies([debian1PrepareInstallEnv, zfsPartition3Boot])
