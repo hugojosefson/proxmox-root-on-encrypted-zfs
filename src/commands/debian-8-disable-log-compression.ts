@@ -1,5 +1,5 @@
 import { inChrootCommand } from "./in-chroot-command.ts";
-import { debian6FirstBoot } from "./debian-6-first-boot.ts";
+import { zfsMirrorGrub } from "./zfs-mirror-grub.ts";
 
 export const debian8DisableLogCompression = inChrootCommand(
   "debian8DisableLogCompression",
@@ -11,4 +11,4 @@ for file in /etc/logrotate.d/* ; do
 done
 `,
 )
-  .withDependencies([debian6FirstBoot]);
+  .withDependencies([zfsMirrorGrub]);
