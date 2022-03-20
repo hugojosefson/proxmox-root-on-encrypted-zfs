@@ -1,29 +1,31 @@
 import { Command } from "../model/command.ts";
-import { getDisks } from "../os/find-disk.ts";
+import { getDisksExceptFirst, getFirstDisk } from "../os/find-disk.ts";
 import { ensureSuccessful } from "../os/exec.ts";
 import { ROOT } from "../os/user/root.ts";
 import { debian5GrubInstallation } from "./debian-5-grub-installation.ts";
 
 export const zfsMirrorGrub = Command.custom("zfsMirrorGrub")
   .withRun(async () => {
-    const disks: string[] = await getDisks();
-    await ensureSuccessful(ROOT, ["umount", "/boot/efi"]);
-    for (let i = 1; i < disks.length; i++) {
+    const firstDisk = await getFirstDisk();
+    await ensureSuccessful(ROOT, ["umount", `${firstDisk}-part2`]);
+
+    const otherDisks: string[] = await getDisksExceptFirst();
+    for (let i = 0; i < otherDisks.length; i++) {
       await ensureSuccessful(ROOT, [
         "dd",
-        `if=${disks[0]}-part2`,
-        `of=${disks[i]}-part2`,
+        `if=${firstDisk}-part2`,
+        `of=${otherDisks[i]}-part2`,
       ]);
       await ensureSuccessful(ROOT, [
         "efibootmgr",
         `-c`,
         `-g`,
         `-d`,
-        disks[i],
+        otherDisks[i],
         "-p",
         "2",
         "-L",
-        `debian-${i}`,
+        `debian-${i + 2}`,
         "-l",
         "\\EFI\\debian\\grubx64.efi",
       ]);

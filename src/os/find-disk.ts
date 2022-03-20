@@ -46,7 +46,13 @@ async function _getDisks(): Promise<string[]> {
 export const getDisks: typeof _getDisks = memoize(_getDisks);
 
 export async function getFirstDisk(): Promise<string> {
-  return (await getDisks())[0];
+  const disks: string[] = await getDisks();
+  return disks[0];
+}
+
+export async function getDisksExceptFirst(): Promise<string[]> {
+  const disks = await getDisks();
+  return disks.slice(1);
 }
 
 function longestString(strings: string[]): string {
