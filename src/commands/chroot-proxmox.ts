@@ -5,6 +5,8 @@ import { inChrootCommand } from "./in-chroot-command.ts";
 export const chrootProxmoxPrepare = inChrootCommand(
   "chrootProxmoxPrepare",
   `
+apt install -y vim nmap mtr-tiny
+
 apt install -y wget
 echo "deb [arch=amd64] http://download.proxmox.com/debian/pve bullseye pve-no-subscription" > /etc/apt/sources.list.d/pve-install-repo.list
 
