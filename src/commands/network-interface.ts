@@ -20,8 +20,9 @@ export const networkInterface = Command.custom("networkInterface")
 auto lo
 iface lo inet loopback
 
-    `;
-    const nic = `auto ${device}
+`;
+    const nic = `
+auto ${device}
 iface ${device} inet static
         address ${netmask(config.IP).ip}/${netmask(config.IP).bitmask}
         gateway ${netmask(config.IP).gateway}
