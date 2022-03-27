@@ -11,6 +11,8 @@ Debian is installed.
 
 Now, reboot.
 
+-------------------------------------------------------------
+
 When you get to the initramfs prompt, run these two commands:
 
   zpool import -fa
@@ -18,12 +20,24 @@ When you get to the initramfs prompt, run these two commands:
 
 Then reboot again.
 
+-------------------------------------------------------------
+
 You will be prompted for the zfs encryption key after the
 next reboot.
 
-Log in as root, then continue at
-https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_11_Bullseye#Install_Proxmox_VE_packages
+-------------------------------------------------------------
 
+Log in as root.
+
+If you want to change root password, and/or encryption
+password for zfs:
+
+  passwd
+  zfs change-key rpool
+
+-------------------------------------------------------------
+Continue installing Proxmox VE at
+https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_11_Bullseye#Install_Proxmox_VE_packages
 =============================================================
 
 `);
