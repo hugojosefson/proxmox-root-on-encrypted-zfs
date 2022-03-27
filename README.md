@@ -116,7 +116,7 @@ guides linked above.
 2. Optionally clear any existing ZFS pools and disks with the command
    `destroy-all-pools-and-disks`. Make sure nothing is connected that you wish
    to keep!
-3. No LUKS. ZFS native encryption. EFI 1GB, on all disks.
+3. No LUKS. ZFS native encryption. EFI 1GB partition, on all disks.
 4. Mirror over all disks.
 5. `zstd` compression for the root pool. ZFS native encryption. No LUKS. Mirror
    over all disks.
@@ -163,7 +163,7 @@ guides linked above.
 6. No BIOS, only UEFI booting.
 7.
 
-#### Step 6: GRUB Installation
+#### Step 6: First Boot
 
 1. No snapshot. It's easy enough to re-run this installer :)
 2.
