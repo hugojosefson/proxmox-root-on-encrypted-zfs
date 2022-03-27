@@ -116,10 +116,10 @@ guides linked above.
 2. Optionally clear any existing ZFS pools and disks with the command
    `destroy-all-pools-and-disks`. Make sure nothing is connected that you wish
    to keep!
-3. ZFS native encryption. No LUKS. No mirror. (TODO: Yes, mirror!)
-4. No mirror. (TODO: Yes, mirror!)
-5. `zstd` compression for the root pool. ZFS native encryption. No LUKS. No
-   mirror. (TODO: Yes, mirror!)
+3. No LUKS. ZFS native encryption. EFI 1GB, on all disks.
+4. Mirror over all disks.
+5. `zstd` compression for the root pool. ZFS native encryption. No LUKS. Mirror
+   over all disks.
 
 #### Step 3: System Installation
 
@@ -172,7 +172,7 @@ guides linked above.
    partition or pool mounting/unmounting issues.
 5.
 6. Create no extra user account.
-7. No BIOS, only UEFI booting. No mirror. (TODO: Yes, mirror!)
+7. No BIOS, only UEFI booting. Mirror over all disks.
 
 #### Step 7: Optional: Configure Swap
 
