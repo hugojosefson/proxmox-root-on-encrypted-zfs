@@ -1,6 +1,6 @@
 import { ensureSuccessfulStdOut } from "./exec.ts";
 import { ROOT } from "./user/root.ts";
-import { memoize } from "../deps.ts";
+import { memoize, PasswdEntry } from "../deps.ts";
 import { config } from "../config.ts";
 import { mapAsync } from "../fn.ts";
 import { usageAndThrow } from "../usage.ts";
@@ -10,8 +10,13 @@ function findIdsCmd(targetDevice: string): string {
   return `find /dev/disk/by-id/ -type l -exec echo -ne "{}\\t" \\; -exec readlink -f {} \\; | awk -F $'\\t' '/\\t${targetDeviceRegex}$/{print $1}'`;
 }
 
+async function readLinkF(asUser: PasswdEntry, path: string): Promise<string> {
+  return await ensureSuccessfulStdOut(asUser, ["readlink", "-f", path]);
+}
+
 async function findIds(targetDevice: string): Promise<string[]> {
-  const cmd = findIdsCmd(targetDevice);
+  const actualTargetDevice = await readLinkF(ROOT, targetDevice);
+  const cmd = findIdsCmd(actualTargetDevice);
   const output = await ensureSuccessfulStdOut(ROOT, [
     "bash",
     `-euo`,
