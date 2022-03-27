@@ -32,7 +32,7 @@ if (import.meta.main) {
     FQDN: "string",
     IP: "10.10.10.10/24",
     INITRAMFS_IP: "10.10.10.10/24",
-    DISK: "string",
+    DISKS: "string",
   }).forEach(([key, value]) => Deno.env.set(key, value));
 
   await writeAvailableCommands();
