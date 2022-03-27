@@ -161,12 +161,17 @@ const largerDisks = disks.filter((disk) => disk !== smallestDiskAndSize.disk);
 console.log({ largerDisks });
 
 console.log(`-----------------------------------------------6==========`);
-export const zfsPartition2Efi = partition(
-  await getFirstDisk(),
-  2,
-  PARTITION_TYPE.EFI,
-  "+512M",
-);
+export const zfsPartition2Efi = Command.custom("zfsPartition2Efi")
+  .withDependencies(
+    disks.map((disk) =>
+      partition(
+        disk,
+        2,
+        PARTITION_TYPE.EFI,
+        "+1G",
+      )
+    ),
+  );
 
 console.log(`-----------------------------------------------7==========`);
 export const zfsPartition3Boot = Command.custom("zfsPartition3Boot")
