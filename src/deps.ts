@@ -56,11 +56,6 @@ export const parsePasswd = (content: string): Array<PasswdEntry> => {
     );
 };
 
-import { stringify as stringifyYaml_ } from "https://cdn.skypack.dev/yaml@v2.0.0-5";
-// deno-lint-ignore no-explicit-any : yaml can stringify any-thing.
-export const stringifyYaml = (value: any): string =>
-  stringifyYaml_(value, undefined, undefined) || "";
-
 import { fetch as fetchFile } from "https://deno.land/x/file_fetch@0.1.0/mod.ts";
 export { fetchFile };
 
