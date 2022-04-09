@@ -4,13 +4,28 @@ import { ensureSuccessful } from "../os/exec.ts";
 import { ROOT } from "../os/user/root.ts";
 import { debian5GrubInstallation } from "./debian-5-grub-installation.ts";
 import { InstallOsPackage } from "./common/os-package.ts";
+import { inChrootCommand } from "./in-chroot-command.ts";
+import { inChrootPrefix } from "./chroot-basic-system-environment.ts";
+
+const zfsMirrorGrubUmount = inChrootCommand(
+  "zfsMirrorGrubUmount",
+  `umount ${await getFirstDisk()}-part2`,
+)
+  .withSkipIfAll([
+    async () => {
+      await ensureSuccessful(
+        ROOT,
+        inChrootPrefix(`! findmnt ${await getFirstDisk()}-part2`),
+      );
+      return true;
+    },
+  ]);
 
 export const zfsMirrorGrub = Command.custom("zfsMirrorGrub")
   .withRun(async () => {
     const firstDisk = await getFirstDisk();
-    await ensureSuccessful(ROOT, ["umount", `${firstDisk}-part2`]);
-
     const otherDisks: string[] = await getDisksExceptFirst();
+
     for (let i = 0; i < otherDisks.length; i++) {
       await ensureSuccessful(ROOT, [
         "dd",
@@ -35,4 +50,5 @@ export const zfsMirrorGrub = Command.custom("zfsMirrorGrub")
   .withDependencies([
     debian5GrubInstallation,
     InstallOsPackage.of("efibootmgr"),
+    zfsMirrorGrubUmount,
   ]);

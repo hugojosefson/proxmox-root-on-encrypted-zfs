@@ -2,12 +2,9 @@ import { readRelativeFile } from "../os/read-relative-file.ts";
 import { ensureSuccessful, ExecOptions } from "../os/exec.ts";
 import { Command, Sequential } from "../model/command.ts";
 import { ROOT } from "../os/user/root.ts";
-import { hostname } from "./hostname.ts";
-import { networkInterface } from "./network-interface.ts";
 import { aptSourcesListMnt } from "./apt-sources-list-mnt.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { config } from "../config.ts";
-import { debian3SystemInstallation } from "./debian-3-system-installation.ts";
 
 export function inChrootPrefix(cmds: string): string[] {
   return [
