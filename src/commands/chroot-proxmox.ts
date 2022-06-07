@@ -5,7 +5,7 @@ import { inChrootCommand } from "./in-chroot-command.ts";
 export const chrootProxmoxPrepare = inChrootCommand(
   "chrootProxmoxPrepare",
   `
-apt install -y vim byobu nmap mtr-tiny man ncdu tree
+apt install -y vim byobu nmap mtr-tiny man ncdu tree whois
 echo EDITOR=vim >> /etc/environment
 byobu-enable
 
