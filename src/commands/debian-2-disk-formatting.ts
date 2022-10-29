@@ -8,7 +8,7 @@ import { config } from "../config.ts";
 import { debian1PrepareInstallEnv } from "./debian-1-prepare-install-env.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { ROOT } from "../os/user/root.ts";
-import { getDisks, getFirstDisk } from "../os/find-disk.ts";
+import { getDisks } from "../os/find-disk.ts";
 import { pascalCase } from "https://deno.land/x/case@v2.1.0/mod.ts";
 import {
   isDeferred,
@@ -283,6 +283,7 @@ export const zfsBootPool = Command.custom("zfsBootPool")
       "-R",
       "/mnt",
       "bpool",
+      "mirror",
       ...disks.map((disk) => `${disk}-part3`),
     ]);
   });
@@ -321,6 +322,7 @@ export const zfsRootPool = Command.custom("zfsRootPool")
       "-R",
       "/mnt",
       "rpool",
+      "mirror",
       ...disks.map((disk) => `${disk}-part4`),
     ], {
       stdin:
