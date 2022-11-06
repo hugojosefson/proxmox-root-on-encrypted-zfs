@@ -1,16 +1,16 @@
 import { Deferred } from "./os/defer.ts";
 
-export const complement = <T>(fn: (t: T) => boolean): (t: T) => boolean =>
-  (t: T) => !fn(t);
+export const complement =
+  <T>(fn: (t: T) => boolean): (t: T) => boolean => (t: T) => !fn(t);
 
 export const toObject = <K extends string | number | symbol, V>() =>
-  (
-    acc: Record<K, V>,
-    [key, value]: [K, V],
-  ): Record<K, V> => {
-    acc[key] = value;
-    return acc;
-  };
+(
+  acc: Record<K, V>,
+  [key, value]: [K, V],
+): Record<K, V> => {
+  acc[key] = value;
+  return acc;
+};
 
 export async function filterAsync<T>(
   predicate: (t: T) => Promise<boolean>,

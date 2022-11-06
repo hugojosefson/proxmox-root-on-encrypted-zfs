@@ -37,16 +37,15 @@ type CommandForLog = {
   locks?: Lock[];
 };
 
-const forLog = (depth: number) =>
-  (command: Command): CommandForLog => {
-    const { dependencies, locks } = command;
-    return (depth > 0)
-      ? {
-        dependencies: dependencies.map(forLog(depth - 1)),
-        locks,
-      }
-      : {};
-  };
+const forLog = (depth: number) => (command: Command): CommandForLog => {
+  const { dependencies, locks } = command;
+  return (depth > 0)
+    ? {
+      dependencies: dependencies.map(forLog(depth - 1)),
+      locks,
+    }
+    : {};
+};
 
 export const sortCommands = (commands: Command[]): Command[] => {
   const dependencyPairs: [Command, Command][] = commands.flatMap(
