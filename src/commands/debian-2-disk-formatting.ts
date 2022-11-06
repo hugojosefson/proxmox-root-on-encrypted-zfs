@@ -168,7 +168,7 @@ export const zfsPartition2Efi = Command.custom("zfsPartition2Efi")
         disk,
         2,
         PARTITION_TYPE.EFI,
-        "+1G",
+        "+5G",
       )
     ),
   );
@@ -181,7 +181,7 @@ export const zfsPartition3Boot = Command.custom("zfsPartition3Boot")
         disk,
         3,
         PARTITION_TYPE.ZFS_BOOT,
-        "+1G",
+        "+5G",
         `boot on ${disk}`,
       )
         .withDependencies([zfsPartition2Efi])
