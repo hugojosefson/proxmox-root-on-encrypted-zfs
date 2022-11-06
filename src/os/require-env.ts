@@ -14,11 +14,11 @@ export async function requireEnv(
   }
 
   if (typeof valueFile === "string") {
-    return await Deno.readTextFile(valueFile);
+    return (await Deno.readTextFile(valueFile)).trim();
   }
 
   if (typeof valueUrl === "string") {
-    return await readFromUrl(valueUrl);
+    return (await readFromUrl(valueUrl)).trim();
   }
 
   const [nextName, ...followingNames] = alternativeNames;
