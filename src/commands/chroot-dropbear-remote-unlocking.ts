@@ -20,7 +20,7 @@ const chrootInstallDropbear = inChrootCommand(
 
 const chrootWriteDropbearAuthorizedKeys = new CreateFile(
   ROOT,
-  FileSystemPath.of(ROOT, "/mnt/etc/dropbear-initramfs/authorized_keys"),
+  FileSystemPath.of(ROOT, "/mnt/etc/dropbear/initramfs/authorized_keys"),
   config.ROOT_AUTHORIZED_KEYS
     .split("\n")
     .map((line) => `command="/usr/bin/zfsunlock" ${line}`)
@@ -32,7 +32,7 @@ const chrootWriteDropbearAuthorizedKeys = new CreateFile(
 
 const chrootCleanupDropbearAuthorizedKeys = inChrootCommand(
   "chrootCleanupDropbearAuthorizedKeys",
-  "sed -i '/ssh-ed25519/d' /etc/dropbear-initramfs/authorized_keys",
+  "sed -i '/ssh-ed25519/d' /etc/dropbear/initramfs/authorized_keys",
 )
   .withDependencies([chrootWriteDropbearAuthorizedKeys]);
 

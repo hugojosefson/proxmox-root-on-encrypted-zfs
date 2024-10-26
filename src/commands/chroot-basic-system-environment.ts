@@ -67,7 +67,6 @@ function inChrootCommand2(
 export const chrootBasicSystemEnvironment = inChrootCommand2(
   "chrootBasicSystemEnvironment",
   `
-ln -sf /proc/self/mounts /etc/mtab
 apt update
 apt full-upgrade -y
 

@@ -41,7 +41,7 @@ mkdir /mnt/run
 mount -t tmpfs tmpfs /mnt/run
 mkdir /mnt/run/lock
 
-debootstrap bullseye /mnt
+debootstrap bookworm /mnt
 
 mkdir /mnt/etc/zfs
 cp /etc/zfs/zpool.cache /mnt/etc/zfs/

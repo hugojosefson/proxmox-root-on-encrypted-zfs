@@ -5,9 +5,9 @@ with native encryption.
 
 This is a more automated way of following these guides:
 
-- [Debian Bullseye Root on ZFS](https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/Debian%20Bullseye%20Root%20on%20ZFS.html)
+- [Debian Bookworm Root on ZFS](https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/Debian%20Bookworm%20Root%20on%20ZFS.html)
   (via [OpenZFS Documentation](https://openzfs.github.io/openzfs-docs/))
-- [Install Proxmox VE on Debian 11 Bullseye](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_11_Bullseye)
+- [Install Proxmox VE on Debian 12 Bookworm](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_12_Bookworm)
   (via [Proxmox VE official wiki](https://pve.proxmox.com/wiki))
 
 ## Opinionated
@@ -18,21 +18,21 @@ For details and choices made, see
 ## Requirements
 
 See the above guides for
-[**Caution**](https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/Debian%20Bullseye%20Root%20on%20ZFS.html#caution)
+[**Caution**](https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/Debian%20Bookworm%20Root%20on%20ZFS.html#id2)
 and
-[System Requirements](https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/Debian%20Bullseye%20Root%20on%20ZFS.html#system-requirements).
+[System Requirements](https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/Debian%20Bookworm%20Root%20on%20ZFS.html#system-requirements).
 
 ## Install
 
 Download and boot the recommended Debian ISO. See
-[Step 1: Prepare The Install Environment](https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/Debian%20Bullseye%20Root%20on%20ZFS.html#step-1-prepare-the-install-environment).
+[Step 1: Prepare The Install Environment](https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/Debian%20Bookworm%20Root%20on%20ZFS.html#step-1-prepare-the-install-environment).
 
-Only do the first item in the list (open the terminal).
+Only do the first item in the list (until _Open a terminal_).
 
 > **Tip!**
 >
 > If you want to boot much faster, and get dropped into a shell immediately, you
-> may want to use `debian-live-11.*-amd64-standard.iso`! Download it from the
+> may want to use `debian-live-12.*-amd64-standard.iso`! Download it from the
 > same place as the other ISO:
 >
 > [https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/](https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/)
@@ -43,7 +43,7 @@ Instead of editing files etc. manually, launch this automated script from the
 terminal:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/main/src/cli.ts | sudo sh -s --
+curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/debian-12/src/cli.ts | sudo sh -s --
 ```
 
 > Note: You may suffix any environment variable with `_FILE` or `_URL` to load
@@ -54,18 +54,18 @@ curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encryp
 #### Install Debian from the LiveCD
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/main/src/cli.ts | sh -s --
+curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/debian-12/src/cli.ts | sh -s --
 
 sudo  NON_INTERACTIVE=true \
       VERBOSE=true \
       IP=192.168.122.253/24 \
-      FQDN=proxymix.example.com \
+      FQDN=pve1.example.com \
       DISKS=/dev/vda,/dev/vdb \
-      DISK_ENCRYPTION_PASSWORD=asdasdasd \
-      ROOT_PASSWORD=rootpass \
+      DISK_ENCRYPTION_PASSWORD="I can't believe it's not as secure as it should be" \
+      ROOT_PASSWORD="iamroot" \
       ROOT_AUTHORIZED_KEYS_URL=https://github.com/hugojosefson.keys \
       /tmp/deno-range*/bin/deno run --reload=https://raw.githubusercontent.com --unstable --allow-all \
-        https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/main/src/cli.ts \
+        https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/debian-12/src/cli.ts \
         debian
 ```
 
@@ -211,14 +211,15 @@ Skip the rest;
 
 - Put the `pve-no-subscription` repo in `/etc/apt/sources.list`.
 
-##### Install Proxmox VE packages
+##### Install Proxmox VE Kernel, and packages
 
 - Pre-answer install questions with contents of
   [src/commands/files/debconf-selections](src/commands/files/debconf-selections).
 
-- Not installing the `proxmox-ve` package, but leaving it up to manual
-  installation and configuration.
+- Not installing the `proxmox-default-kernel`, `proxmox-ve` packages, but
+  leaving it up to manual installation and configuration.
 
 See
-[Install Proxmox VE packages](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_11_Bullseye#Install_Proxmox_VE_packages)
-in the _Install Proxmox VE on Debian 11 Bullseye_ guide.
+[Install Proxmox VE Kernel](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_12_Bookworm#Install_the_Proxmox_VE_Kernel)
+and the following sections in the _Install Proxmox VE on Debian 12 Bookworm_
+guide.
