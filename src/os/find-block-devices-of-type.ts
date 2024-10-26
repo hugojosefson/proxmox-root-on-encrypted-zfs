@@ -1,3 +1,4 @@
+import { runSimple } from "../deps.ts";
 export async function findBlockDevicesOfType(
   type: string,
 ): Promise<Array<string>> {
@@ -11,7 +12,6 @@ export async function findBlockDevicesOfType(
     `${lsblk} | ${awk}`,
   ];
 
-  const outputBytes = await Deno.run({ cmd, stdout: "piped" }).output();
-  const stdout: string = new TextDecoder().decode(outputBytes).trim();
+  const stdout: string = await runSimple(cmd);
   return stdout.split("\n");
 }

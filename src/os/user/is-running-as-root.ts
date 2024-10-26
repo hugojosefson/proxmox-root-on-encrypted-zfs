@@ -1,9 +1,5 @@
+import { jsonRun } from "../../deps.ts";
+
 export async function isRunningAsRoot(): Promise<boolean> {
-  const runOptions: Deno.RunOptions = {
-    cmd: ["bash", "-ec", "echo $EUID"],
-    stdout: "piped",
-  };
-  const outputBytes: Uint8Array = await Deno.run(runOptions).output();
-  const outputString = new TextDecoder().decode(outputBytes);
-  return outputString.trim() === "0";
+  return await jsonRun(["bash", "-ec", "echo $EUID"]) === 0;
 }

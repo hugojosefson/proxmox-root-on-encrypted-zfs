@@ -21,7 +21,7 @@ export abstract class AbstractPackageCommand<T extends PackageName>
     this.packageName = packageName;
   }
 
-  toString() {
+  override toString() {
     return `AbstractPackageCommand(${this.packageName})`;
   }
 }
@@ -38,11 +38,11 @@ export class InstallOsPackage extends AbstractPackageCommand<OsPackageName> {
     );
   }
 
-  toString(): string {
+  override toString(): string {
     return `InstallOsPackage(${this.packageName})`;
   }
 
-  async run(): Promise<RunResult> {
+  override async run(): Promise<RunResult> {
     await ensureSuccessful(ROOT, [
       "apt",
       "install",
@@ -82,11 +82,11 @@ export class RemoveOsPackage extends AbstractPackageCommand<OsPackageName> {
     );
   }
 
-  toString(): string {
+  override toString(): string {
     return `RemoveOsPackage(${this.packageName})`;
   }
 
-  async run(): Promise<RunResult> {
+  override async run(): Promise<RunResult> {
     await ensureSuccessful(ROOT, [
       "apt",
       "purge",
@@ -126,11 +126,11 @@ export class ReplaceOsPackage extends Command {
     );
   }
 
-  toString(): string {
+  override toString(): string {
     return `ReplaceOsPackage(-${this.removePackageName}, +${this.installPackageName})`;
   }
 
-  async run(): Promise<RunResult> {
+  override async run(): Promise<RunResult> {
     await ensureSuccessful(
       ROOT,
       [
@@ -178,11 +178,11 @@ export class InstallFlatpakPackage
     );
   }
 
-  toString(): string {
+  override toString(): string {
     return `InstallFlatpakPackage(${this.packageName})`;
   }
 
-  async run(): Promise<RunResult> {
+  override async run(): Promise<RunResult> {
     await ensureSuccessful(ROOT, [
       "flatpak",
       "install",
@@ -215,11 +215,11 @@ export class RemoveFlatpakPackage
     );
   }
 
-  toString(): string {
+  override toString(): string {
     return `RemoveFlatpakPackage(${this.packageName})`;
   }
 
-  async run(): Promise<RunResult> {
+  override async run(): Promise<RunResult> {
     await ensureSuccessful(ROOT, [
       "flatpak",
       "uninstall",

@@ -29,7 +29,7 @@ export class FileSystemPath extends Lock {
     this.path = path;
   }
 
-  toString() {
+  override toString() {
     return `FileSystemPath(${this.path.toString()})`;
   }
 

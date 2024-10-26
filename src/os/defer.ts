@@ -3,7 +3,7 @@ export interface ResolveFn<T> {
 }
 
 export interface RejectFn {
-  // deno-lint-ignore no-explicit-any : because Promise defines it as ?any
+  // deno-lint-ignore no-explicit-any
   (reason?: any): void;
 }
 

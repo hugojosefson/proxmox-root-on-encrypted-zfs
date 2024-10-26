@@ -23,7 +23,7 @@ export class Exec extends Command {
     this.locks.push(...locks);
   }
 
-  run(): Promise<RunResult> {
+  override run(): Promise<RunResult> {
     return ensureSuccessful(
       this.asUser,
       this.cmd,
@@ -31,7 +31,7 @@ export class Exec extends Command {
     );
   }
 
-  toString(): string {
+  override toString(): string {
     return `Exec(${(this.asUser.toString())}, ${this.cmd}${
       this.options ? ", " + JSON.stringify(this.options) : ""
     })`;
@@ -66,7 +66,9 @@ export class Exec extends Command {
         const result: CommandResult = {
           stdout,
           stderr,
-          status: success ? { success, code: 0 } : { success, code: 1 },
+          status: success
+            ? { success, code: 0, signal: null }
+            : { success, code: 1, signal: null },
         };
         return result;
       });

@@ -6,7 +6,7 @@ import { usageAndThrow } from "../usage.ts";
 import { resolveValue } from "../fn.ts";
 
 export interface CommandResult {
-  status: Deno.ProcessStatus;
+  status: Deno.CommandStatus;
   stdout: string;
   stderr: string;
 }
@@ -151,7 +151,7 @@ export class Command {
   ): Promise<CommandResult> {
     if (!commandResult) {
       this.doneDeferred.resolve({
-        status: { success: true, code: 0 },
+        status: { success: true, code: 0, signal: null },
         stdout: `Success: ${this.toString()}`,
         stderr: "",
       });
@@ -159,7 +159,7 @@ export class Command {
     }
     if (typeof commandResult === "string") {
       this.doneDeferred.resolve({
-        status: { success: true, code: 0 },
+        status: { success: true, code: 0, signal: null },
         stdout: commandResult,
         stderr: "",
       });
@@ -205,7 +205,7 @@ export class Command {
 
   private alreadyDoneResult(): CommandResult {
     return {
-      status: { success: true, code: 0 },
+      status: { success: true, code: 0, signal: null },
       stdout: `Already done: ${this.toString()}`,
       stderr: "",
     };
@@ -213,7 +213,7 @@ export class Command {
 
   private strangelyDoneResult(): CommandResult {
     return {
-      status: { success: true, code: 0 },
+      status: { success: true, code: 0, signal: null },
       stdout: `Strangely done: ${this.toString()}`,
       stderr: "",
     };
@@ -227,7 +227,7 @@ export class Sequential extends Command {
     this.commands = commands;
   }
 
-  async run(): Promise<RunResult> {
+  override async run(): Promise<RunResult> {
     let result: RunResult | undefined;
     for (const command of this.commands) {
       console.error(`${this.name}: Running sequentially ${command.name}`);

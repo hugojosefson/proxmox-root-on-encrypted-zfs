@@ -40,7 +40,7 @@ export function usageAndExit(
   return Deno.exit(code);
 }
 
-export function usageAndThrow(error: Error): never {
+export function usageAndThrow(error: Error | unknown): never {
   usage();
   throw error;
 }

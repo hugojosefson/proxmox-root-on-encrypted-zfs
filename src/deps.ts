@@ -1,4 +1,4 @@
-import { dirname } from "https://deno.land/std@0.95.0/path/mod.ts";
+import { dirname } from "jsr:@std/path@1.0.7";
 export { dirname };
 
 import {
@@ -7,8 +7,7 @@ import {
   warning,
 } from "https://deno.land/x/colorlog@v1.0/mod.ts";
 
-// deno-lint-ignore no-explicit-any : colorlog uses any
-type LogColorer = (val: any) => string;
+type LogColorer = (val: unknown) => string;
 export const colorlog: {
   error: LogColorer;
   success: LogColorer;
@@ -20,22 +19,18 @@ export interface PasswdEntry {
   uid: number;
   gid: number;
   homedir: string;
-  toJSON: () => any;
+  toJSON: () => unknown;
   toString: () => string;
 }
 interface PasswdEntry_ {
-  // deno-lint-ignore no-explicit-any : parse-passwd has no typings
-  username: any;
-  // deno-lint-ignore no-explicit-any : parse-passwd has no typings
-  homedir: any;
-  // deno-lint-ignore no-explicit-any : parse-passwd has no typings
-  uid: any;
-  // deno-lint-ignore no-explicit-any : parse-passwd has no typings
-  gid: any;
+  username: unknown;
+  homedir: unknown;
+  uid: unknown;
+  gid: unknown;
 }
 
-import parsePasswd_ from "https://cdn.skypack.dev/parse-passwd@v1.0.0";
-export const parsePasswd = (content: string): Array<PasswdEntry> => {
+import parsePasswd_ from "npm:parse-passwd@1.0.0";
+export function parsePasswd(content: string): Array<PasswdEntry> {
   const parsed = parsePasswd_(content) as Array<PasswdEntry_>;
   return parsed
     .map(
@@ -54,7 +49,7 @@ export const parsePasswd = (content: string): Array<PasswdEntry> => {
         },
       }),
     );
-};
+}
 
 import { fetch as fetchFile } from "https://deno.land/x/file_fetch@0.2.0/mod.ts";
 export { fetchFile };
@@ -65,9 +60,10 @@ export { memoize };
 import { isDocker } from "https://deno.land/x/is_docker@v2.0.0/mod.ts";
 export { isDocker };
 
-import toposort_ from "https://cdn.skypack.dev/toposort@v2.0.2?dts";
-export const toposort = <T>(things: Array<[T, T]>): Array<T> =>
-  toposort_(things);
+import toposort_ from "npm:toposort@2.0.2";
+export function toposort<T>(things: Array<[T, T]>): Array<T> {
+  return toposort_(things);
+}
 
 import {
   compose,
@@ -75,10 +71,10 @@ import {
   pipe,
   pipeline,
   pipelineUnary,
-} from "https://deno.land/x/compose@1.3.2/index.js";
+} from "https://deno.land/x/compose@1.3.5/index.js";
 export { compose, composeUnary, pipe, pipeline, pipelineUnary };
 
-import { paramCase } from "https://deno.land/x/case@v2.1.0/mod.ts";
+import { paramCase } from "https://deno.land/x/case@2.2.0/mod.ts";
 export function kebabCase(s: string): string {
   const kebab: string = paramCase(s);
 
@@ -91,7 +87,7 @@ export function kebabCase(s: string): string {
 export const ipRegex =
   "(\\b25[0-5]|\\b2[0-4][0-9]|\\b[01]?[0-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}";
 
-import { Netmask as Netmask_ } from "https://cdn.skypack.dev/pin/netmask@v2.0.2-NDKHaKcpQNNH2W79Bihb/mode=imports/optimized/netmask.js";
+import { Netmask as Netmask_ } from "npm:netmask@2.0.2";
 export interface Netmask {
   ip: string;
   base: string;
@@ -111,3 +107,9 @@ export function netmask(input: string): Netmask {
     gateway: gateway ?? net.first,
   };
 }
+
+export {
+  type CommandFailure,
+  jsonRun,
+  run as runSimple,
+} from "jsr:@hugojosefson/run-simple@2.3.8";

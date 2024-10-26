@@ -1,15 +1,10 @@
-import { memoize, parsePasswd, PasswdEntry } from "../../deps.ts";
+import { memoize, parsePasswd, PasswdEntry, runSimple } from "../../deps.ts";
 import { defer, Deferred } from "../defer.ts";
 import { usageAndThrow } from "../../usage.ts";
 
 const uidComparator = (a: PasswdEntry, b: PasswdEntry) => a?.uid - b?.uid;
 async function _getUsers() {
-  const runOptions: Deno.RunOptions = {
-    cmd: ["getent", "passwd"],
-    stdout: "piped",
-  };
-  const outputBytes: Uint8Array = await Deno.run(runOptions).output();
-  const outputString = new TextDecoder().decode(outputBytes).trim();
+  const outputString = await runSimple("getent passwd");
   return parsePasswd(outputString)
     .sort(uidComparator);
 }

@@ -1,6 +1,5 @@
 #!/bin/sh
-// 2>/dev/null;DENO_VERSION_RANGE="1.20.2";DENO_RUN_ARGS="--reload=https://raw.githubusercontent.com --unstable --allow-all";set -e;(command -v sudo>/dev/null||DEBIAN_FRONTEND=noninteractive apt install -y sudo>/dev/null);(command -v unzip>/dev/null||(sudo apt update && sudo DEBIAN_FRONTEND=noninteractive apt install -y unzip>/dev/null));V="$DENO_VERSION_RANGE";A="$DENO_RUN_ARGS";U="$(expr "$(echo "$V"|curl -Gso/dev/null -w%{url_effective} --data-urlencode @- "")" : '..\(.*\)...')";D="$(command -v deno||true)";t(){ d="$(mktemp)";rm "${d}";dirname "${d}";};f(){ m="$(command -v "$0"||true)";l="/* 2>/dev/null";! [ -z $m ]&&[ -r $m ]&&[ "$(head -c3 "$m")" = '#!/' ]&&(read x && read y &&[ "$x" = "#!/bin/sh" ]&&[ "$l" != "${y%"$l"*}" ])<"$m";};a(){ [ -n $D ];};s(){ a&&[ -x "$R/deno" ]&&[ "$R/deno" = "$D" ]&&return;deno eval "import{satisfies as e}from'https://deno.land/x/semver@v1.4.0/mod.ts';Deno.exit(e(Deno.version.deno,'$V')?0:1);">/dev/null 2>&1;};g(){ curl -sSfL "https://api.mattandre.ws/semver/github/denoland/deno/$U";};e(){ R="$(t)/deno-range-$V/bin";mkdir -p "$R";export PATH="$R:$PATH";[ -x "$R/deno" ]&&return;a&&s&&([ -L "$R/deno" ]||ln -s "$D" "$R/deno")&&return;v="$(g)";i="$(t)/deno-$v";[ -L "$R/deno" ]||ln -s "$i/bin/deno" "$R/deno";s && return;echo -n "Downloading temporary deno...">&2;curl -fsSL https://deno.land/install.sh|DENO_INSTALL="$i" sh -s "$v" 2>/dev/null >&2;};e;f&&exec deno run $A "$0" "$@";r="$(t)/cli.ts";cat > "$r" <<'//🔚'
-
+// 2>/dev/null;DENO_VERSION_RANGE="^2.0.3";DENO_RUN_ARGS="--reload=https://raw.githubusercontent.com --allow-all";set -e;V="$DENO_VERSION_RANGE";A="$DENO_RUN_ARGS";h(){ [ -x "$(command -v "$1" 2>&1)" ];};g(){ u="$([ "$(id -u)" != 0 ]&&echo sudo||:)";if h brew;then echo "brew install $1";elif h apt;then echo "($u apt update && $u DEBIAN_FRONTEND=noninteractive apt install -y $1)";elif h yum;then echo "$u yum install -y $1";elif h pacman;then echo "$u pacman -yS --noconfirm $1";elif h opkg-install;then echo "$u opkg-install $1";fi;};p(){ q="$(g "$1")";if [ -z "$q" ];then echo "Please install '$1' manually, then try again.">&2;exit 1;fi;eval "o=\"\$(set +o)\";set -x;$q;set +x;eval \"\$o\"">&2;};f(){ h "$1"||p "$1";};w(){ [ -n "$1" ] && "$1" -V >/dev/null 2>&1;};U="$(l=$(printf "%s" "$V"|wc -c);for i in $(seq 1 $l);do c=$(printf "%s" "$V"|cut -c $i);printf '%%%02X' "'$c";done)";D="$(w "$(command -v deno||:)"||:)";t(){ i="$(if h findmnt;then findmnt -Ononoexec,noro -ttmpfs -nboAVAIL,TARGET|sort -rn|while IFS=$'\n\t ' read -r a m;do [ "$a" -ge 150000000 ]&&[ -d "$m" ]&&printf %s "$m"&&break||:;done;fi)";printf %s "${i:-"${TMPDIR:-/tmp}"}";};z(){ m="$(command -v "$0"||true)";l="/* 2>/dev/null";! [ -z "$m" ]&&[ -r "$m" ]&&[ "$(head -c3 "$m")" = '#!/' ]&&(read x && read y &&[ "$x" = "#!/bin/sh" ]&&[ "$l" != "${y%"$l"*}" ])<"$m";};s(){ deno eval "import{satisfies as e}from'https://deno.land/x/semver@v1.4.1/mod.ts';Deno.exit(e(Deno.version.deno,'$V')?0:1);">/dev/null 2>&1;};e(){ R="$(t)/deno-range-$V/bin";mkdir -p "$R";export PATH="$R:$PATH";s&&return;f curl;v="$(curl -sSfL "https://semver-version.deno.dev/api/github/denoland/deno/$U")";i="$(t)/deno-$v";ln -sf "$i/bin/deno" "$R/deno";s && return;f unzip;([ "${A#*-q}" != "$A" ]&&exec 2>/dev/null;curl -fsSL https://deno.land/install.sh|DENO_INSTALL="$i" sh -s $DENO_INSTALL_ARGS "$v"|grep -iv discord>&2);};e;z&&exec deno run $A "$0" "$@";sed -E 's#from "\.#from "https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/debian-12/src#g' <<'//🔚' | exec deno run $A - "$@"
 import { getCommand } from "./commands/index.ts";
 import { colorlog } from "./deps.ts";
 
@@ -10,9 +9,9 @@ import { isRunningAsRoot } from "./os/user/is-running-as-root.ts";
 import { run } from "./run.ts";
 import { errorAndExit, usageAndExit } from "./usage.ts";
 
-export const cli = async () => {
+export async function cli() {
   if (!await isRunningAsRoot()) {
-    await errorAndExit(
+    errorAndExit(
       3,
       "You must run this program as root. Try again with sudo :)",
     );
@@ -20,7 +19,7 @@ export const cli = async () => {
 
   const args: string[] = Deno.args;
   if (!args.length) {
-    await usageAndExit();
+    usageAndExit();
   }
 
   const commands: Command[] = await Promise.all(args.map(getCommand));
@@ -43,31 +42,43 @@ export const cli = async () => {
         Deno.exit(err.status.code);
       }
     },
-    // deno-lint-ignore no-explicit-any : because Promise defines it as ?any
-    (err?: any): RejectFn => {
-      if (err?.message) {
-        console.error("err.message: " + colorlog.error(err.message));
-      }
-      if (err?.stack) {
-        console.error("err.stack: " + colorlog.warning(err.stack));
-      }
-      if (err?.stdout) {
-        console.error("err.stdout: " + colorlog.success(err.stdout));
-      }
-      if (err?.stderr) {
-        console.error("err.stderr: " + colorlog.error(err.stderr));
+    (err: unknown): RejectFn => {
+      let code = 1;
+      if (typeof err === "object" && err !== null) {
+        if ("message" in err && err?.message) {
+          console.error("err.message: " + colorlog.error(err.message));
+        }
+        if ("stack" in err && err?.stack) {
+          console.error("err.stack: " + colorlog.warning(err.stack));
+        }
+        if ("stdout" in err && err?.stdout) {
+          console.error("err.stdout: " + colorlog.success(err.stdout));
+        }
+        if ("stderr" in err && err?.stderr) {
+          console.error("err.stderr: " + colorlog.error(err.stderr));
+        }
+        if ("status" in err && err?.status && typeof err.status === "object") {
+          if (
+            "code" in err.status && err.status?.code &&
+            typeof err.status.code === "number"
+          ) {
+            code = err.status.code;
+          }
+        }
+        if ("code" in err && err?.code && typeof err.code === "number") {
+          code = err.code;
+        }
       }
 
       console.error("err: " + colorlog.error(JSON.stringify(err, null, 2)));
-      const code: number = err?.status?.code || err?.code || 1;
+      // const code: number = err?.status?.code || err?.code || 1;
       Deno.exit(code);
     },
   );
-};
+}
 
 if (import.meta.main) {
   await cli();
 }
 
 //🔚
-// 2>/dev/null || :; sed -E 's#from "\.#from "https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/debian-12/src#g' -i "$r";exec deno run $A "$r" "$@"

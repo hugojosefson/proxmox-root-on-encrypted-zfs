@@ -1,65 +1,38 @@
 import { config } from "../config.ts";
-import { colorlog, PasswdEntry } from "../deps.ts";
+import {
+  colorlog,
+  type CommandFailure,
+  PasswdEntry,
+  runSimple,
+} from "../deps.ts";
 import { CommandResult } from "../model/command.ts";
 import { FileSystemPath } from "../model/dependency.ts";
 import { getDbusSessionBusAddress } from "./user/target-user.ts";
 import { ROOT } from "./user/root.ts";
-import { usageAndThrow } from "../usage.ts";
 
-export type ExecOptions = Pick<Deno.RunOptions, "cwd" | "env"> & {
+export function isCommandFailure(err: unknown): err is CommandFailure {
+  return typeof err === "object" && err !== null && "cmd" in err &&
+    "status" in err && "stdout" in err && "stderr" in err;
+}
+export type ExecOptions = Pick<Deno.CommandOptions, "cwd" | "env"> & {
   verbose?: boolean;
   stdin?: string;
-};
-
-export const pipeAndCollect = async (
-  from: (Deno.Reader & Deno.Closer) | null | undefined,
-  to?: (Deno.Writer & Deno.Closer) | null | false,
-  verbose?: boolean,
-): Promise<string> => {
-  if (!from) {
-    usageAndThrow(new Error("Nothing to pipe from!"));
-  }
-
-  const isVerbose: boolean = typeof verbose === "boolean"
-    ? verbose
-    : config.VERBOSE;
-
-  const buf: Uint8Array = new Uint8Array(1024);
-  let all: Uint8Array = Uint8Array.from([]);
-  for (
-    let n: number | null = 0;
-    typeof n === "number";
-    n = await from.read(buf)
-  ) {
-    if (n > 0) {
-      const bytes: Uint8Array = buf.subarray(0, n);
-      all = Uint8Array.from([...all, ...bytes]);
-      if (isVerbose && to) {
-        await to.write(bytes);
-      }
-    }
-  }
-  from?.close();
-  return new TextDecoder().decode(all);
 };
 
 const DEFAULT_ENV = { DEBIAN_FRONTEND: "noninteractive" };
 async function runOptions(
   asUser: PasswdEntry,
   opts: ExecOptions,
-): Promise<Pick<Deno.RunOptions, "cwd" | "env">> {
+): Promise<Pick<Deno.CommandOptions, "cwd" | "env">> {
   return {
     ...(opts.cwd ? { cwd: opts.cwd } : {}),
-    ...(asUser === ROOT
-      ? {
-        ...(opts.env ? { env: { ...DEFAULT_ENV, ...opts.env } } : DEFAULT_ENV),
-      }
-      : {
-        env: {
-          DBUS_SESSION_BUS_ADDRESS: await getDbusSessionBusAddress(),
-          ...({ ...DEFAULT_ENV, ...opts.env } || DEFAULT_ENV),
-        },
-      }),
+    env: {
+      ...(asUser === ROOT
+        ? { DBUS_SESSION_BUS_ADDRESS: await getDbusSessionBusAddress() }
+        : {}),
+      ...DEFAULT_ENV,
+      ...(opts.env ?? {}),
+    },
   };
 }
 
@@ -85,54 +58,28 @@ export async function ensureSuccessful(
   );
   const stdinString = typeof options.stdin === "string" ? options.stdin : "";
   const shouldPipeStdin: boolean = stdinString.length > 0;
-
-  const process: Deno.Process = Deno.run({
-    stdin: shouldPipeStdin ? "piped" : "null",
-    stdout: "piped",
-    stderr: "piped",
-    cmd: effectiveCmd,
-    ...await runOptions(asUser, options),
-  });
-
-  if (shouldPipeStdin) {
-    const stdinBytes = new TextEncoder().encode(stdinString);
-    try {
-      await process.stdin?.write(stdinBytes);
-    } finally {
-      await process.stdin?.close();
+  try {
+    const stdout = await runSimple(effectiveCmd, {
+      ...await runOptions(asUser, options),
+      ...(shouldPipeStdin ? { stdin: stdinString } : {}),
+    });
+    return {
+      status: {
+        success: true,
+        code: 0,
+        signal: null,
+      },
+      stdout,
+      stderr: "",
+    };
+  } catch (err) {
+    if (!(isCommandFailure(err))) {
+      throw err;
     }
-  }
-
-  const stdoutPromise = pipeAndCollect(
-    process.stdout,
-    Deno.stdout,
-    options.verbose,
-  );
-  const stderrPromise = pipeAndCollect(
-    process.stderr,
-    Deno.stderr,
-    options.verbose,
-  );
-
-  const status: Deno.ProcessStatus = await process.status();
-  if (status.success) {
-    const result = {
-      cmd,
-      status,
-      stdout: await stdoutPromise,
-      stderr: await stderrPromise,
-    };
-    console.log(result);
-    return result;
-  } else {
-    const reason = {
-      cmd,
-      status: await process.status(),
-      stdout: await stdoutPromise,
-      stderr: await stderrPromise,
-    };
-    console.error(reason);
-    return Promise.reject(reason);
+    return Promise.reject({
+      status: err.output,
+      ...err,
+    });
   }
 }
 

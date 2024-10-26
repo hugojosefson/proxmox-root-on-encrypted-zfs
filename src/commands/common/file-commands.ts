@@ -29,13 +29,13 @@ export abstract class AbstractFileCommand extends Command {
     this.locks.push(this.path);
   }
 
-  toString(): string {
+  override toString(): string {
     return `AbstractFileCommand(${this.owner.toString()}, ${this.path.toString()}, ${
       formatOctal(this.mode)
     })`;
   }
 
-  abstract run(): Promise<RunResult>;
+  abstract override run(): Promise<RunResult>;
 }
 
 export async function existsDir(dirSegments: Array<string>): Promise<boolean> {
@@ -151,7 +151,7 @@ export class CreateFile extends AbstractFileCommand {
     this.shouldBackupAnyExistingFile = shouldBackupAnyExistingFile;
   }
 
-  toString(): string {
+  override toString(): string {
     return `CreateFile(${this.owner.toString()}, ${this.path.toString()}, ${
       formatOctal(this.mode)
     }, ${this.contents.length} bytes${
@@ -187,11 +187,11 @@ export class CreateDir extends Command {
     this.path = path;
   }
 
-  toString(): string {
+  override toString(): string {
     return `CreateDir(${this.owner.toString()}, ${this.path.toString()})`;
   }
 
-  async run(): Promise<RunResult> {
+  override async run(): Promise<RunResult> {
     await createDir(this.owner, this.path);
     return `Created dir ${this.toString()}.`;
   }
@@ -241,7 +241,7 @@ export class LineInFile extends AbstractFileCommand {
     this.line = line;
   }
 
-  toString(): string {
+  override toString(): string {
     return `LineInFile(${this.owner.toString()}, ${this.path.toString()}, ${
       JSON.stringify(this.line)
     })`;
@@ -263,11 +263,11 @@ export class UserInGroup extends Command {
     this.group = group;
   }
 
-  toString(): string {
+  override toString(): string {
     return `UserInGroup(${this.user.toString()}, ${this.group.toString()})`;
   }
 
-  async run(): Promise<RunResult> {
+  override async run(): Promise<RunResult> {
     return await ensureUserInGroup(this.user, this.group);
   }
 }
