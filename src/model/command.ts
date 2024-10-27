@@ -133,10 +133,6 @@ export class Command {
       }
       return this.done;
     }
-    if (!this.doneDeferred.isDone) {
-      this.doneDeferred.resolve(this.strangelyDoneResult());
-    }
-    return this.done;
   }
 
   static custom(name: string): Command {
@@ -207,14 +203,6 @@ export class Command {
     return {
       status: { success: true, code: 0, signal: null },
       stdout: `Already done: ${this.toString()}`,
-      stderr: "",
-    };
-  }
-
-  private strangelyDoneResult(): CommandResult {
-    return {
-      status: { success: true, code: 0, signal: null },
-      stdout: `Strangely done: ${this.toString()}`,
       stderr: "",
     };
   }
