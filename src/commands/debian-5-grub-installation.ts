@@ -30,7 +30,7 @@ while ! [ -s /etc/zfs/zfs-list.cache/rpool ]; do sleep 0.5; done; echo DONE.
 
 echo -n Killing zed...
 while pidof zed; do
-  kill -SIGINT $(cat /run/zed.pid) || true
+  kill -SIGINT $(pidof zed) || true
   sleep 0.5
 done; echo DONE.
 sed -E 's|/mnt/?|/|' -i /etc/zfs/zfs-list.cache/?pool
