@@ -258,7 +258,6 @@ export const zfsBootPool = Command.custom("zfsBootPool")
       ...[
         "acltype=posixacl",
         "canmount=off",
-        "compression=lz4",
         "devices=off",
         "normalization=formD",
         "relatime=on",
