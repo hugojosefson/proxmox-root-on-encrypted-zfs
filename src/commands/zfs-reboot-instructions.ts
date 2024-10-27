@@ -9,16 +9,18 @@ export const zfsRebootInstructions = Command.custom("zfsRebootInstructions")
 =============================================================
 Debian is installed.
 
-Now, reboot.
+Now, save these instructions, or at least take a photo.
 
 -------------------------------------------------------------
+
+Reboot.
 
 When you get to the initramfs prompt, run these two commands:
 
   zpool import -fa
   zpool export -a
 
-Then reboot again.
+Then press CTRL-ALT-DEL to reboot again.
 
 -------------------------------------------------------------
 
@@ -36,8 +38,8 @@ password for zfs:
   zfs change-key rpool
 
 -------------------------------------------------------------
-Continue installing Proxmox VE at
-https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_11_Bullseye#Install_Proxmox_VE_packages
+Continue installing Proxmox VE Kernel etc, at
+https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_12_Bookworm#Install_the_Proxmox_VE_Kernel
 =============================================================
 
 `);
