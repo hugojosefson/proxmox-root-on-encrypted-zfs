@@ -132,6 +132,9 @@ const NO_SMALLEST_DISK_FOUND: DiskAndSize = {
 
 console.log(`-----------------------------------------------1==========`);
 const disks: string[] = await getDisks();
+const isSingleDisk = disks.length === 1;
+const poolType = isSingleDisk ? [] : ["mirror"];
+const copies = isSingleDisk ? ["copies=2"] : [];
 console.log({ disks });
 
 console.log(`-----------------------------------------------2==========`);
@@ -211,16 +214,19 @@ const zfsSmallestPartition4Root = partition(
 console.log(`----------------------------------------------10==========`);
 export const zfsPartition4Root = Command.custom("zfsPartition4Root")
   .withDependencies(
-    largerDisks.map((disk) =>
-      partition(
-        disk,
-        4,
-        PARTITION_TYPE.ZFS_OTHER,
-        rootPartitionSize.promise,
-        `root on ${disk}`,
-      )
-        .withDependencies([zfsSmallestPartition4Root])
-    ),
+    [
+      zfsSmallestPartition4Root,
+      ...largerDisks.map((disk) =>
+        partition(
+          disk,
+          4,
+          PARTITION_TYPE.ZFS_OTHER,
+          rootPartitionSize.promise,
+          `root on ${disk}`,
+        )
+          .withDependencies([zfsSmallestPartition4Root])
+      ),
+    ],
   );
 
 console.log(`----------------------------------------------11==========`);
@@ -263,12 +269,13 @@ export const zfsBootPool = Command.custom("zfsBootPool")
         "relatime=on",
         "xattr=sa",
         "mountpoint=/boot",
+        ...copies,
       ].flatMap((systemOption) => ["-O", systemOption]),
       "-f",
       "-R",
       "/mnt",
       "bpool",
-      "mirror",
+      ...poolType,
       ...disks.map((disk) => `${disk}-part3`),
     ]);
   });
@@ -302,12 +309,13 @@ export const zfsRootPool = Command.custom("zfsRootPool")
         "relatime=on",
         "xattr=sa",
         "mountpoint=/",
+        ...copies,
       ].flatMap((systemOption) => ["-O", systemOption]),
       "-f",
       "-R",
       "/mnt",
       "rpool",
-      "mirror",
+      ...poolType,
       ...disks.map((disk) => `${disk}-part4`),
     ], {
       stdin:
