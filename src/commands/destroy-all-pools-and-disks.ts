@@ -58,7 +58,12 @@ rmdir /mnt/* || true
       ),
     );
 
-    await ensureSuccessful(ROOT, ["wipefs", "--all", ...await getDisks()]);
+    await ensureSuccessful(ROOT, [
+      "wipefs",
+      "--force",
+      "--all",
+      ...await getDisks(),
+    ]);
     for (const disk of await getDisks()) {
       await ensureSuccessful(ROOT, ["sgdisk", "--zap-all", disk]);
       await ensureSuccessful(ROOT, ["sgdisk", "--clear", disk]);
