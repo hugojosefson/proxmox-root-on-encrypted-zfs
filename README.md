@@ -92,8 +92,8 @@ encryption key.
 Login as `root`.
 
 Continue manually at
-[Install Proxmox VE packages](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_11_Bullseye#Install_Proxmox_VE_packages)
-in the _Install Proxmox VE on Debian 11 Bullseye_ guide.
+[Install Proxmox VE Kernel etc](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_12_Bookworm#Install_the_Proxmox_VE_Kernel)
+in the _Install Proxmox VE on Debian 12 Bookworm_ guide.
 
 ## Opinionated: Specifics
 
@@ -117,9 +117,9 @@ guides linked above.
    `destroy-all-pools-and-disks`. Make sure nothing is connected that you wish
    to keep!
 3. No LUKS. ZFS native encryption. EFI 1GB partition, on all disks.
-4. Mirror over all disks.
+4. Mirror over all disks. If only one disk, using `copies=2` instead.
 5. `zstd` compression for the root pool. ZFS native encryption. No LUKS. Mirror
-   over all disks.
+   over all disks (or `copies=2` if single disk).
 
 #### Step 3: System Installation
 
@@ -150,7 +150,7 @@ guides linked above.
     `ROOT_AUTHORIZED_KEYS`.
 14. Install Dropbear for remote unlocking, but let it generate its own server
     keys. Useful to access it using a different hostname, so that the ssh client
-    keeps track of the two different sets of keys under different hostnames.
+    keeps track of the two different sets of host keys at different hostnames.
 15. Skip installing `popularity-contest`.
 
 #### Step 5: GRUB Installation
@@ -198,7 +198,7 @@ Skip the rest;
 
 ### Proxmox VE
 
-#### Install a standard Debian Bullseye (amd64)
+#### Install a standard Debian 12 Bookworm (amd64)
 
 ##### Add an /etc/hosts entry for your IP address
 
