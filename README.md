@@ -43,7 +43,7 @@ Instead of editing files etc. manually, launch this automated script from the
 terminal:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/debian-12/src/cli.ts | sudo sh -s --
+curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/main/src/cli.ts | sudo sh -s --
 ```
 
 > Note: You may suffix any environment variable with `_FILE` or `_URL` to load
@@ -54,7 +54,7 @@ curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encryp
 #### Install Debian from the LiveCD
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/debian-12/src/cli.ts | sh -s --
+curl -fsSL https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/main/src/cli.ts | sh -s --
 
 sudo  NON_INTERACTIVE=true \
       VERBOSE=true \
@@ -65,7 +65,7 @@ sudo  NON_INTERACTIVE=true \
       ROOT_PASSWORD="iamroot" \
       ROOT_AUTHORIZED_KEYS_URL=https://github.com/hugojosefson.keys \
       /tmp/deno-range*/bin/deno run --reload=https://raw.githubusercontent.com --unstable --allow-all \
-        https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/debian-12/src/cli.ts \
+        https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/main/src/cli.ts \
         debian
 ```
 
