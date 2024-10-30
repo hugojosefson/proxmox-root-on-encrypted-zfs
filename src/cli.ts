@@ -70,4 +70,4 @@ if (import.meta.main) {
 }
 
 //🔚
-// 2>/dev/null || :; sed -E 's#from "\.#from "https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/main/src#g' -i "$r";exec deno run $A "$r" "$@"
+// 2>/dev/null || :; sed -E 's#from "\.#from "https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/debian11/src#g' -i "$r";exec deno run $A "$r" "$@"
