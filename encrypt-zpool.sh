@@ -360,6 +360,6 @@ main() {
 }
 
 # Only execute main if the script is being run directly (not sourced)
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+if [[ "${BASH_SOURCE:-$0}" == "${0}" ]]; then
     main "$@"
 fi
