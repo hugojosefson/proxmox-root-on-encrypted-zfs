@@ -83,7 +83,7 @@ get_settable_properties() {
             continue
         fi
         properties+=("${name}" "${value}")
-    done < <(zfs get --header=no --output=property,value,source all "${dataset}")
+    done < <(zfs get -H -o property,value,source all "${dataset}")
 
     echo "${properties[@]}"
 }
@@ -166,7 +166,7 @@ check_and_load_root_key() {
     local encryption_root
 
     # Check if dataset is encrypted
-    encryption_root="$(zfs get --header=no --output=value encryptionroot "${dataset}")"
+    encryption_root="$(zfs get -H -o value encryptionroot "${dataset}")"
 
     if [[ "${encryption_root}" != "-" ]]; then
         echo "Root dataset ${dataset} is encrypted. Loading encryption key..."
@@ -187,7 +187,7 @@ encrypt_dataset() {
     local encrypted_dataset
     local -a props
 
-    mountpoint="$(zfs get --header=no --output=value mountpoint "${dataset}")"
+    mountpoint="$(zfs get -H -o value mountpoint "${dataset}")"
     snapshot_name="${dataset}@pre_encryption_$(date +%Y%m%d_%H%M%S)"
     encrypted_dataset="${dataset}_encrypted"
 
@@ -256,7 +256,7 @@ encrypt_dataset() {
 
     # Transfer data
     echo "Transferring data from ${snapshot_name} to ${encrypted_dataset}"
-    if ! zfs send --replicate "${snapshot_name}" | zfs receive "${encrypted_dataset}"; then
+    if ! zfs send -R "${snapshot_name}" | zfs receive "${encrypted_dataset}"; then
         echo "Failed to transfer data to ${encrypted_dataset}"
         zfs destroy -r "${encrypted_dataset}"
         return 1
@@ -290,7 +290,7 @@ main() {
 
     # Get list of available zpools
     local -a pools
-    mapfile -t pools < <(zpool list --header=no --output=name)
+    mapfile -t pools < <(zpool list -H -o name)
 
     if [[ ${#pools[@]} -eq 0 ]]; then
         echo "No zpools found. Exiting."
@@ -321,8 +321,8 @@ main() {
 
     # Find all unencrypted datasets in the selected pool
     local -a unencrypted_datasets
-    mapfile -t unencrypted_datasets < <(zfs list --header=no --output=name,encryption,keystatus \
-        --types filesystem --sort=name --recursion "${selected_pool}" | \
+    mapfile -t unencrypted_datasets < <(zfs list -H -o name,encryption,keystatus \
+        -t filesystem -s name -r "${selected_pool}" | \
         awk '($2 == "off" || ($2 != "off" && $3 == "none")) {print $1}')
 
     if [[ ${#unencrypted_datasets[@]} -eq 0 ]]; then
@@ -343,7 +343,7 @@ main() {
     # Create and enable systemd unlock service if we encrypted anything
     if ((ENCRYPTION_COUNT > 0)); then
         local pool_mountpoint
-        pool_mountpoint="$(zfs get --header=no --output=value mountpoint "${selected_pool}")"
+        pool_mountpoint="$(zfs get -H -o value mountpoint "${selected_pool}")"
         if [[ -d "${pool_mountpoint}" ]]; then
             echo "Creating systemd unlock service..."
             create_unlock_service "${pool_mountpoint}"
