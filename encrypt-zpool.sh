@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/bbcac4e/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && echo asdasdasd | bash -x ./encrypt-zpool.sh 2>&1 | less
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/4482998/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && echo asdasdasd | bash -x ./encrypt-zpool.sh 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -42,7 +42,7 @@ ___() {
 
 ___ "Global constants"
 readonly TEMP_ROOT_MOUNT="/mnt/tmp_encryption"
-readonly FINAL_KEY_FILE="/.zfs-encryption.key"
+readonly FINAL_KEY_FILE="/.zfs-encryption-passphrase"
 readonly CURRENT_KEY_FILE="${TEMP_ROOT_MOUNT}${FINAL_KEY_FILE}"
 
 ___ "Global variables for tracking state"
@@ -347,7 +347,7 @@ main() {
     echo "Found ${#unencrypted_datasets[@]} unencrypted datasets."
 
     ___ "Create ${CURRENT_KEY_FILE}, unless already exists and is not empty"
-    zfs mount "${root_fs_dataset}"
+    zfs mount "${TEMP_ROOT_MOUNT}"
     if [[ -s "${CURRENT_KEY_FILE}" ]]; then
         echo "Key file ${CURRENT_KEY_FILE} already exists and is not empty. Skipping creation." >&2
     else
