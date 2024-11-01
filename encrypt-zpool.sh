@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/35cb3af/encrypt-zpool.sh | bash -xs -- 2>&1 | less
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/b3f21f2/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -88,16 +88,19 @@ get_settable_properties_options_arguments() {
     local -a args
 
     ___ "Get all properties that are:"
-    # - defined locally (source == 'local')
-    # - not read-only (source != '-')
-    # - have a value set (value != '-')
+    ___ " - defined locally (source == 'local')"
+    ___ " - not read-only (source != '-')"
+    ___ " - have a value set (value != '-')"
     while IFS=$'\t' read -r name value source; do
         if [[ "${source}" == "-" ]]; then
+            echo "Skipping property ${name} with value ${value} and source ${source}, because it is read-only." >&2
             continue
         fi
         if [[ "${value}" == "-" ]]; then
+            echo "Skipping property ${name} with value ${value} and source ${source}, because it has no value." >&2
             continue
         fi
+        echo "Adding property ${name} with value ${value} (source ${source}) to list of settable properties arguments." >&2
         args+=("-o" "${name}=${value}")
     done < "$(zfs get -pH -s local -o property,value,source all "${dataset}" | create_temp_file)"
 
@@ -253,6 +256,11 @@ encrypt_dataset() {
 
         ___ "Handle root filesystem dataset"
         echo "Root filesystem dataset detected. Using passphrase encryption with prompt."
+        ___ "Check that we have a TTY"
+        if [[ ! -t 0 ]]; then
+            echo "No TTY detected. Cannot prompt for passphrase. Exiting." >&2
+            exit 1
+        fi
         read -r -s -p "Enter passphrase for ${dataset}: " passphrase
         echo
 
@@ -266,7 +274,7 @@ encrypt_dataset() {
             zfs destroy "${snapshot_name}"
             return 1
         fi
-        zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
+        zfs set -u mountpoint="/" "${encrypted_dataset}"
         echo "${passphrase}" | zfs load-key "${encrypted_dataset}"
     else
         local passphrase
