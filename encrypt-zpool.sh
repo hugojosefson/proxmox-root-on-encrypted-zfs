@@ -429,7 +429,12 @@ encrypt_dataset_or_load_key() {
           return 0
       fi
 
-      encrypted_dataset="${dataset}_encrypted"
+      # if dataset is its own pool, we set encrypted_dataset to "${dataset}/_encrypted", otherwise to "${dataset}_encrypted"
+      if [[ "${dataset}" == "${dataset%/*}" ]]; then
+          encrypted_dataset="${dataset}/_encrypted"
+      else
+          encrypted_dataset="${dataset}_encrypted"
+      fi
       snapshot="${dataset}@pre_encryption_$(date +%Y%m%d_%H%M%S)"
       temp_mountpoint="$(get_temp_mountpoint "${dataset}")"
 
