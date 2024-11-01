@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/1b0a12b/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && echo asdasdasd | bash -x ./encrypt-zpool.sh 2>&1 | less
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/7a14464/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh | tee encrypt-zpool.log
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -467,8 +467,8 @@ encrypt_dataset_or_load_key() {
       echo "Transferring data from ${snapshot} to ${encrypted_dataset}"
       if ! zfs send -R "${snapshot}" | zfs receive -u "${dataset_option_arguments[@]}" "${encrypted_dataset}"; then
           echo "Failed to transfer data to ${encrypted_dataset}"
-          zfs destroy -r "${snapshot}"
-          zfs destroy -r "${encrypted_dataset}"
+          zfs destroy -dr "${snapshot}"
+          zfs destroy -dr "${encrypted_dataset}"
           exit 1
       fi
       zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
@@ -486,8 +486,8 @@ encrypt_dataset_or_load_key() {
       zfs set keylocation=file://${FINAL_KEY_FILE} "${encrypted_dataset}"
 
       ___ "Clean up original dataset and snapshot"
-      zfs destroy -r "${snapshot}"
-      zfs destroy -r "${dataset}"
+      zfs destroy -dr "${snapshot}"
+      zfs destroy -dr "${dataset}"
 
       ___ "Rename encrypted dataset"
       zfs rename "${encrypted_dataset}" "${dataset}"
