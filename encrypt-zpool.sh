@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/4ccadf3/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/04c7a8c/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -305,7 +305,7 @@ encrypt_dataset() {
 
     ___ "Transfer data"
     echo "Transferring data from ${snapshot_name} to ${encrypted_dataset}"
-    if ! zfs send -R "${snapshot_name}" | zfs receive "${encrypted_dataset}"; then
+    if ! zfs send -R "${snapshot_name}" | zfs receive -F "${encrypted_dataset}"; then
         echo "Failed to transfer data to ${encrypted_dataset}"
         zfs destroy -r "${encrypted_dataset}"
         return 1
