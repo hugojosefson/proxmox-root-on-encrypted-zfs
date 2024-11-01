@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/f402af9/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh | tee encrypt-zpool.log
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/0f71920/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh | tee encrypt-zpool.log
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -469,6 +469,7 @@ encrypt_dataset_or_load_key() {
           echo "Failed to transfer data to ${encrypted_dataset}"
           zfs destroy -d "${snapshot}"
           zfs destroy -r "${encrypted_dataset}"
+          zfs destroy "${snapshot}"
           exit 1
       fi
       zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
@@ -488,6 +489,7 @@ encrypt_dataset_or_load_key() {
       ___ "Clean up original dataset and snapshot"
       zfs destroy -d "${snapshot}"
       zfs destroy -r "${dataset}"
+      zfs destroy "${snapshot}"
 
       ___ "Rename encrypted dataset"
       zfs rename "${encrypted_dataset}" "${dataset}"
