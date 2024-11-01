@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/f6480c5/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/4ccadf3/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -252,17 +252,7 @@ encrypt_dataset() {
     configured_root_mount="$(zfs get -H -o value mountpoint "${root_fs}")"
 
     if [[ "${temp_mountpoint}" == "${TEMP_ROOT_MOUNT}" ]]; then
-        local passphrase
-
         ___ "Handle root filesystem dataset"
-        echo "Root filesystem dataset detected. Using passphrase encryption with prompt."
-        ___ "Check that we have a TTY"
-        if [[ ! -t 0 ]]; then
-            echo "No TTY detected. Cannot prompt for passphrase. Exiting." >&2
-            exit 1
-        fi
-        read -r -s -p "Enter passphrase for ${dataset}: " passphrase
-        echo
 
         if ! zfs create \
           -o encryption=aes-256-gcm \
@@ -275,7 +265,6 @@ encrypt_dataset() {
             return 1
         fi
         zfs set -u mountpoint="/" "${encrypted_dataset}"
-        echo "${passphrase}" | zfs load-key "${encrypted_dataset}"
     else
         local passphrase
 
