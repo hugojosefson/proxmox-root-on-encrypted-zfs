@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/2ca839a/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && echo asdasdasd | bash -x ./encrypt-zpool.sh 2>&1 | less
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/bbcac4e/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && echo asdasdasd | bash -x ./encrypt-zpool.sh 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -438,13 +438,7 @@ encrypt_dataset_or_load_key() {
           encrypted_dataset="${dataset}_encrypted"
       fi
       snapshot="${dataset}@pre_encryption_$(date +%Y%m%d_%H%M%S)"
-      temp_mountpoint="$(get_temp_mountpoint "${dataset}")"
-
-      if [[ "${temp_mountpoint}" == "${TEMP_ROOT_MOUNT}" ]]; then
-          final_mountpoint="/"
-      else
-          final_mountpoint="${temp_mountpoint#"${TEMP_ROOT_MOUNT}"}"
-      fi
+      final_mountpoint="$(get_final_mountpoint "${dataset}")"
 
       if [[ "${encryption_type}" == "file" ]]; then
           dataset_option_arguments+=("-o" "encryption=aes-256-gcm")
@@ -545,7 +539,7 @@ get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level() {
     done
 }
 
-get_temp_mountpoint() {
+get_final_mountpoint() {
     local dataset
     local current_mountpoint
 
