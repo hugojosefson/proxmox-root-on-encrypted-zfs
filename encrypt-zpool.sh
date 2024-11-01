@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/9a1294b/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/e81684f/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -448,6 +448,14 @@ encrypt_dataset_or_load_key() {
       zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
       ((ENCRYPTION_COUNT+=1))
 
+      ___ "Have the user choose a new encryption passphrase"
+      if [[ "${encryption_type}" == "prompt" ]]; then
+          until zfs change-key -o keylocation="prompt" "${encrypted_dataset}"; do
+              echo "Failed to change encryption passphrase on ${encrypted_dataset}. Try again. When you succeed, it will replace ${dataset}." >&2
+              sleep 1
+          done
+      fi
+
       ___ "Clean up original dataset and snapshot"
       zfs destroy -r "${snapshot}"
       zfs destroy -r "${dataset}"
@@ -455,13 +463,6 @@ encrypt_dataset_or_load_key() {
       ___ "Rename encrypted dataset"
       zfs rename "${encrypted_dataset}" "${dataset}"
 
-      ___ "Have the user choose a new encryption passphrase"
-      if [[ "${encryption_type}" == "prompt" ]]; then
-          until zfs set keylocation="prompt" "${encrypted_dataset}"; do
-              echo "Failed to set keylocation=prompt on ${encrypted_dataset}. Try again." >&2
-              sleep 1
-          done
-      fi
 }
 
 list_first_level_datasets() {
