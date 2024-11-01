@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/d74663b/encrypt-zpool.sh | bash -xs -- 2>&1 | less
+# wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/35cb3af/encrypt-zpool.sh | bash -xs -- 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -257,7 +257,6 @@ encrypt_dataset() {
         echo
 
         if ! zfs create \
-          -o mountpoint="${temp_mountpoint}" \
           -o encryption=aes-256-gcm \
           -o keyformat=passphrase \
           -o keylocation=prompt \
@@ -292,7 +291,7 @@ encrypt_dataset() {
         chattr +i "${temp_key_file}" || echo "Warning: Could not set immutable flag on ${temp_key_file}"
 
         if ! zfs create \
-         -u -o mountpoint="${final_mountpoint}" \
+         -u  \
          -o encryption=aes-256-gcm \
          -o keyformat=passphrase \
          -o keylocation="file://${configured_key_file}" \
@@ -303,6 +302,7 @@ encrypt_dataset() {
             zfs destroy "${snapshot_name}"
             return 1
         fi
+        zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
         echo "${passphrase}" | zfs load-key "${encrypted_dataset}"
     fi
 
