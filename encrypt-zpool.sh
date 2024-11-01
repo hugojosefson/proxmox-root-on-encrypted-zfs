@@ -43,7 +43,7 @@ ___() {
 ___ "Global constants"
 readonly TEMP_ROOT_MOUNT="/mnt/tmp_encryption"
 readonly FINAL_KEY_FILE="/.zfs-encryption.key"
-readonly CURRENT_KEY_FILE="${TEMP_ROOT_MOUNT}/${FINAL_KEY_FILE}"
+readonly CURRENT_KEY_FILE="${TEMP_ROOT_MOUNT}${FINAL_KEY_FILE}"
 
 ___ "Global variables for tracking state"
 declare -a MOUNTED_CHROOTS=()
