@@ -294,19 +294,6 @@ main() {
 
     echo "Selected pool: ${selected_pool}"
 
-    # NOTE: we imported the pool with -R "${TEMP_ROOT_MOUNT}" so all datasets' mountpoints are under "${TEMP_ROOT_MOUNT}"
-    # DONE: collect each first-level dataset in the pool.
-    # DONE: find the dataset that has mountpoint="${TEMP_ROOT_MOUNT}". this is the root filesystem dataset, typically rpool/ROOT/pve-1. save it in a variable named "root_fs_dataset"
-    # DONE: find the first level dataset that the root filesystem dataset belongs to, or is. typically rpool/ROOT. save it in a variable named "root_fs_dataset_first_level"
-    # DONE: encrypt_dataset "${root_fs_dataset_first_level}"
-    # DONE: zfs mount "${root_fs_dataset}"
-    # DONE: CONFIGURED_KEY_FILE="/.zfs-encryption.key"
-    # DONE: CURRENT_KEY_FILE="${TEMP_ROOT_MOUNT}/${CONFIGURED_KEY_FILE}"
-    # DONE: create_key_file "${CURRENT_KEY_FILE}"
-    # DONE: set encryption properties on the pool itself, that all current and future datasets will inherit, except "${root_fs_dataset_first_level}" which has its own encryption properties. zfs set -O encryption=aes-256-gcm -O keyformat=passphrase -O keylocation="file://${CURRENT_KEY_FILE}" "${selected_pool}"
-    # DONE: for each first-level dataset (except "${root_fs_dataset_first_level}", which is already encrypted): encrypt_dataset_or_load_key "file" "${dataset}"
-    # DONE: zfs set -u keylocation="${CONFIGURED_KEY_FILE}" "${selected_pool}"
-
     ___ "Collect first-level datasets"
     local -a first_level_datasets=()
     mapfile -t first_level_datasets < "$(list_first_level_datasets "${selected_pool}" | create_temp_file)"
@@ -366,9 +353,6 @@ main() {
         generate_passphrase | create_key_file "${CURRENT_KEY_FILE}"
     fi
 
-    ___ "Set encryption properties on the pool itself, that all current and future datasets will inherit, except ${root_fs_dataset_first_level} which has its own encryption properties"
-    zpool set encryption=aes-256-gcm keyformat=passphrase keylocation="file://${CURRENT_KEY_FILE}" "${selected_pool}"
-
     ___ "Process each unencrypted dataset"
     for dataset in "${unencrypted_datasets[@]}"; do
         if ! encrypt_dataset_or_load_key "file" "${dataset}"; then
@@ -376,9 +360,6 @@ main() {
             continue
         fi
     done
-
-    ___ "Set correct keylocation for after boot"
-    zpool set -u keylocation="file://${CONFIGURED_KEY_FILE}" "${selected_pool}"
 
     ___ "Create and enable systemd unlock service if we encrypted anything"
     if ((ENCRYPTION_COUNT > 0)); then
@@ -428,7 +409,7 @@ encrypt_dataset_or_load_key() {
 
       ___ "If already encrypted, load key instead of encrypting"
       if is_encrypted "${dataset}"; then
-          echo "Dataset ${dataset} is already encrypted. Loading key..." >&2
+          echo "Dataset ${dataset} is already encrypted. Checking if key is loaded..." >&2
           local encryption_root
           encryption_root="$(find_encryption_root "${dataset}")"
           if [[ -z "${encryption_root}" ]]; then
@@ -436,7 +417,7 @@ encrypt_dataset_or_load_key() {
               exit 1
           fi
           if ! is_key_loaded_for "${encryption_root}"; then
-              echo "Encryption root ${encryption_root} is not loaded. Loading key..." >&2
+              echo "Encryption key for ${encryption_root} is not loaded. Loading key..." >&2
               if ! zfs load-key "${encryption_root}"; then
                   echo "Failed to load key for ${dataset}, whose encryption root is ${encryption_root}. Cannot proceed." >&2
                   exit 1
