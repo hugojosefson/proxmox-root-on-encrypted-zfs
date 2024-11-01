@@ -487,7 +487,7 @@ encrypt_dataset_or_load_key() {
       fi
 
       ___ "Set final key file location"
-      zfs set -o keylocation=file://${FINAL_KEY_FILE} "${encrypted_dataset}"
+      zfs set keylocation=file://${FINAL_KEY_FILE} "${encrypted_dataset}"
 
       ___ "Clean up original dataset and snapshot"
       zfs destroy -r "${snapshot}"
