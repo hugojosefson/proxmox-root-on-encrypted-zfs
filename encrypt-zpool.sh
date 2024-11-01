@@ -42,8 +42,8 @@ ___() {
 
 ___ "Global constants"
 readonly TEMP_ROOT_MOUNT="/mnt/tmp_encryption"
-readonly CONFIGURED_KEY_FILE="/.zfs-encryption.key"
-readonly CURRENT_KEY_FILE="${TEMP_ROOT_MOUNT}/${CONFIGURED_KEY_FILE}"
+readonly FINAL_KEY_FILE="/.zfs-encryption.key"
+readonly CURRENT_KEY_FILE="${TEMP_ROOT_MOUNT}/${FINAL_KEY_FILE}"
 
 ___ "Global variables for tracking state"
 declare -a MOUNTED_CHROOTS=()
@@ -369,7 +369,7 @@ main() {
         fi
 
         echo "Successfully encrypted ${ENCRYPTION_COUNT} datasets!"
-        echo "IMPORTANT: You will find the encryption key for non-root datasets in ${CONFIGURED_KEY_FILE}, after boot."
+        echo "IMPORTANT: You will find the encryption key for non-root datasets in ${FINAL_KEY_FILE}, after boot."
         echo "Make sure to back it up to a secure location for recovery purposes."
     else
         echo "No datasets were encrypted successfully."
@@ -442,7 +442,7 @@ encrypt_dataset_or_load_key() {
       if [[ "${encryption_type}" == "file" ]]; then
           dataset_option_arguments+=("-o" "encryption=aes-256-gcm")
           dataset_option_arguments+=("-o" "keyformat=passphrase")
-          dataset_option_arguments+=("-o" "keylocation=file://${CONFIGURED_KEY_FILE}")
+          dataset_option_arguments+=("-o" "keylocation=file://${CURRENT_KEY_FILE}")
       elif [[ "${encryption_type}" == "prompt" ]]; then
           local temp_key_file
           temp_key_file="$(generate_passphrase | create_key_file)"
@@ -480,6 +480,9 @@ encrypt_dataset_or_load_key() {
               sleep 1
           done
       fi
+
+      ___ "Set final key file location"
+      zfs set -o keylocation=file://${FINAL_KEY_FILE} "${encrypted_dataset}"
 
       ___ "Clean up original dataset and snapshot"
       zfs destroy -r "${snapshot}"
