@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/e90e4cc/encrypt-zpool.sh | bash -xs -- 2>&1 | less
+# wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/d74663b/encrypt-zpool.sh | bash -xs -- 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -217,7 +217,8 @@ check_and_load_root_key() {
 
 encrypt_dataset() {
     local dataset="${1}"
-    local mountpoint
+    local temp_mountpoint
+    local final_mountpoint
     local snapshot_name
     local encrypted_dataset
     local root_fs
@@ -226,7 +227,8 @@ encrypt_dataset() {
     local configured_key_file
     local temp_key_file
 
-    mountpoint="$(zfs get -H -o value mountpoint "${dataset}")"
+    temp_mountpoint="$(zfs get -H -o value mountpoint "${dataset}")"
+    final_mountpoint="${temp_mountpoint#"${TEMP_ROOT_MOUNT}"}"
     snapshot_name="${dataset}@pre_encryption_$(date +%Y%m%d_%H%M%S)"
     encrypted_dataset="${dataset}_encrypted"
     root_fs="$(find_root_filesystem "$(echo "${dataset}" | cut -d/ -f1)")"
@@ -246,38 +248,39 @@ encrypt_dataset() {
     ___ "Get the configured (final) root mountpoint for key storage"
     configured_root_mount="$(zfs get -H -o value mountpoint "${root_fs}")"
 
-    if [[ "${mountpoint}" == "${TEMP_ROOT_MOUNT}" ]]; then
+    if [[ "${temp_mountpoint}" == "${TEMP_ROOT_MOUNT}" ]]; then
+        local passphrase
+
         ___ "Handle root filesystem dataset"
         echo "Root filesystem dataset detected. Using passphrase encryption with prompt."
-        local passphrase
         read -r -s -p "Enter passphrase for ${dataset}: " passphrase
         echo
 
-        if ! zfs create -o encryption=aes-256-gcm \
-                       -o keyformat=passphrase \
-                       -o keylocation=prompt \
-                       -o mountpoint="${mountpoint}" \
-                       "${option_arguments[@]}" \
-                       "${encrypted_dataset}"; then
+        if ! zfs create \
+          -o mountpoint="${temp_mountpoint}" \
+          -o encryption=aes-256-gcm \
+          -o keyformat=passphrase \
+          -o keylocation=prompt \
+          "${option_arguments[@]}" \
+          "${encrypted_dataset}"; then
             echo "Failed to create encrypted dataset ${encrypted_dataset}"
             zfs destroy "${snapshot_name}"
             return 1
         fi
-
+        zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
         echo "${passphrase}" | zfs load-key "${encrypted_dataset}"
     else
+        local passphrase
+
         ___ "Handle non-root filesystem dataset"
         echo "Encrypting dataset: ${dataset}"
-
-        local passphrase
 
         ___ "Set up both temporary and final key paths"
         configured_key_file="${configured_root_mount}/.${dataset//\//_}.key"
         temp_key_file="${TEMP_ROOT_MOUNT}/.${dataset//\//_}.key"
 
-        passphrase="$(generate_passphrase)"
-
         ___ "Create and secure key file in the temporary root filesystem location"
+        passphrase="$(generate_passphrase)"
         mkdir -p "$(dirname "${temp_key_file}")"
         if ! echo "${passphrase}" > "${temp_key_file}"; then
             echo "Failed to create key file ${temp_key_file}"
@@ -288,10 +291,11 @@ encrypt_dataset() {
         chmod 400 "${temp_key_file}"
         chattr +i "${temp_key_file}" || echo "Warning: Could not set immutable flag on ${temp_key_file}"
 
-        if ! zfs create -o encryption=aes-256-gcm \
+        if ! zfs create \
+         -u -o mountpoint="${final_mountpoint}" \
+         -o encryption=aes-256-gcm \
          -o keyformat=passphrase \
          -o keylocation="file://${configured_key_file}" \
-         -o mountpoint="${mountpoint}" \
          "${option_arguments[@]}" \
          "${encrypted_dataset}"; then
            echo "Failed to create encrypted dataset ${encrypted_dataset}"
@@ -299,7 +303,6 @@ encrypt_dataset() {
             zfs destroy "${snapshot_name}"
             return 1
         fi
-
         echo "${passphrase}" | zfs load-key "${encrypted_dataset}"
     fi
 
