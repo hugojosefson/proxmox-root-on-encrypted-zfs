@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/3a483db/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh 2>&1 | tee encrypt-zpool.log; less encrypt-zpool.log
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/d143fea/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh 2>&1 | tee encrypt-zpool.log; less encrypt-zpool.log
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -295,12 +295,30 @@ main() {
     echo "Selected pool: ${selected_pool}"
 
     ___ "Collect first-level datasets"
-    local -a first_level_datasets=(rpool/ROOT rpool/data rpool/var-lib-vz)
-#    mapfile -t first_level_datasets < "$(list_first_level_datasets "${selected_pool}" | create_temp_file)"
+    local -a first_level_datasets_expected=(rpool/ROOT rpool/data rpool/var-lib-vz)
+    local -a first_level_datasets=()
+    mapfile -t first_level_datasets < "$(list_first_level_datasets "${selected_pool}" | create_temp_file)"
+    if ! arrays_equal "${first_level_datasets[*]}" "${first_level_datasets_expected[*]}"; then
+        echo "ERROR: Unexpected first-level datasets found. Cannot proceed.
+
+Expected: ${first_level_datasets_expected[*]}
+Actual: ${first_level_datasets[*]}
+" >&2
+        exit 1
+    fi
 
     ___ "Find root filesystem dataset"
-    local root_fs_dataset=rpool/ROOT/pve-1
-#    root_fs_dataset="$(find_root_filesystem "${selected_pool}")"
+    local root_fs_dataset_expected=rpool/ROOT/pve-1
+    local root_fs_dataset
+    root_fs_dataset="$(find_root_filesystem "${selected_pool}")"
+    if [[ "${root_fs_dataset}" != "${root_fs_dataset_expected}" ]]; then
+        echo "ERROR: Unexpected root filesystem dataset found. Cannot proceed.
+
+Expected: ${root_fs_dataset_expected}
+Actual: ${root_fs_dataset}
+" >&2
+        exit 1
+    fi
 
     if [[ -z "${root_fs_dataset}" ]]; then
         ___ "Root filesystem dataset not found, we have no place to store keys"
@@ -310,8 +328,17 @@ main() {
     echo "Found root filesystem dataset: ${root_fs_dataset}"
 
     ___ "Find the root filesystem dataset's first-level dataset"
-    local root_fs_dataset_first_level=rpool/ROOT
-#    root_fs_dataset_first_level="$(find_root_fs_dataset_first_level "${root_fs_dataset}" "${first_level_datasets[@]}")"
+    local root_fs_dataset_first_level_expected=rpool/ROOT
+    local root_fs_dataset_first_level
+    root_fs_dataset_first_level="$(find_root_fs_dataset_first_level "${root_fs_dataset}" "${first_level_datasets[@]}")"
+    if [[ "${root_fs_dataset_first_level}" != "${root_fs_dataset_first_level_expected}" ]]; then
+        echo "ERROR: Unexpected root filesystem's first-level dataset found. Cannot proceed.
+
+Expected: ${root_fs_dataset_first_level_expected}
+Actual: ${root_fs_dataset_first_level}
+" >&2
+        exit 1
+    fi
 
     if [[ -z "${root_fs_dataset_first_level}" ]]; then
         echo "Root filesystem's first-level dataset not found. Cannot proceed."
@@ -322,8 +349,17 @@ main() {
     ___ "Encrypt ${root_fs_dataset_first_level} with -o keylocation=prompt"
     encrypt_dataset_or_load_key "prompt" "${root_fs_dataset_first_level}"
 
+    local -a root_fs_dataset_and_ancestors_with_oldest_first_except_first_level_expected=()
     local -a root_fs_dataset_and_ancestors_with_oldest_first_except_first_level=()
-#    mapfile -t root_fs_dataset_and_ancestors_with_oldest_first_except_first_level < "$(get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level "${root_fs_dataset_first_level}" "${root_fs_dataset}" | create_temp_file)"
+    mapfile -t root_fs_dataset_and_ancestors_with_oldest_first_except_first_level < "$(get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level "${root_fs_dataset_first_level}" "${root_fs_dataset}" | create_temp_file)"
+    if ! arrays_equal "${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[*]}" "${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level_expected[*]}"; then
+        echo "ERROR: Unexpected root filesystem's first-level dataset found. Cannot proceed.
+
+Expected: ${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level_expected[*]}
+Actual: ${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[*]}
+" >&2
+        exit 1
+    fi
 
     ___ "Encrypt the rest of the ${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[*]} datasets with inherited encryption properties"
     if ((${#root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[@]} > 0)); then
@@ -333,11 +369,21 @@ main() {
     fi
 
     ___ "Find all remaining unencrypted datasets in the selected pool"
-    local -a unencrypted_datasets=(rpool/data rpool/var-lib-vz)
-#    mapfile -t unencrypted_datasets < "$(zfs list -H -o name,encryption,keystatus \
-#        -t filesystem -s name -r "${selected_pool}" | \
-#        awk '($2 == "off" || ($2 != "off" && $3 == "none")) {print $1}' | \
-#        create_temp_file)"
+    local -a unencrypted_datasets_expected=(rpool/data rpool/var-lib-vz)
+    local -a unencrypted_datasets=()
+    mapfile -t unencrypted_datasets < "$(zfs list -H -o name,encryption,keystatus \
+        -t filesystem -s name -r "${selected_pool}" | \
+        awk '($2 == "off" || ($2 != "off" && $3 == "none")) {print $1}' | \
+        create_temp_file)"
+
+    if ! arrays_equal "${unencrypted_datasets[*]}" "${unencrypted_datasets_expected[*]}"; then
+        echo "ERROR: Unexpected unencrypted datasets found. Cannot proceed.
+
+Expected: ${unencrypted_datasets_expected[*]}
+Actual: ${unencrypted_datasets[*]}
+" >&2
+        exit 1
+    fi
 
     if [[ ${#unencrypted_datasets[@]} -eq 0 ]]; then
         echo "No (more) unencrypted datasets found in ${selected_pool}. Done."
@@ -552,6 +598,14 @@ get_final_mountpoint() {
     else
         echo "${current_mountpoint#"${TEMP_ROOT_MOUNT}"}"
     fi
+}
+
+arrays_equal() {
+    local -a a=()
+    local -a b=()
+    mapfile -t a < "$(echo "${1}" | create_temp_file)"
+    mapfile -t b < "$(echo "${2}" | create_temp_file)"
+    [[ "${#a[@]}" == "${#b[@]}" ]] && diff "$(printf '%s\n' "${a[@]}" | create_temp_file)" "$(printf '%s\n' "${b[@]}" | create_temp_file)"
 }
 
 main "$@"
