@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/9139f43/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh 2>&1 | tee encrypt-zpool.log; less encrypt-zpool.log
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/5f9d326/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh 2>&1 | tee encrypt-zpool.log; less encrypt-zpool.log
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -374,6 +374,7 @@ Actual: ${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[*]}
     mapfile -t unencrypted_datasets < "$(zfs list -H -o name,encryption,keystatus \
         -t filesystem -s name -r "${selected_pool}" | \
         awk '($2 == "off" || ($2 != "off" && $3 == "none")) {print $1}' | \
+        grep -v "^${selected_pool}$" | \
         create_temp_file)"
 
     if ! arrays_equal "${unencrypted_datasets[*]}" "${unencrypted_datasets_expected[*]}"; then
