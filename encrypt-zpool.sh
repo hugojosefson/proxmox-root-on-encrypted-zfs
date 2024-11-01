@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/b0199f8847111ae6e422dfd9cd309666a7a705fe/encrypt-zpool.sh | bash -xs -- 2>&1 | less
+# wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/d7f4d52/encrypt-zpool.sh | bash -xs -- 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -36,15 +36,19 @@
 
 set -euo pipefail
 
-# Global constants
+___() {
+  echo -e "\e[1m\e[32m>>> $*\e[0m" >&2
+}
+
+___ "Global constants"
 readonly TEMP_ROOT_MOUNT="/mnt/tmp_encryption"
 
-# Global variables for tracking state
+___ "Global variables for tracking state"
 declare -a MOUNTED_CHROOTS=()
 declare -a TEMP_FILES=()
 declare -i ENCRYPTION_COUNT=0
 
-# Function declarations
+___ "Function declarations"
 cleanup() {
     local exit_code="${?}"
 
@@ -53,7 +57,7 @@ cleanup() {
 #        rm -f "${file}" || true
 #    done
 
-    # Cleanup any remaining chroots
+    ___ "Cleanup any remaining chroots"
     for mountpoint in "${MOUNTED_CHROOTS[@]}"; do
         cleanup_chroot "${mountpoint}" || true
     done
@@ -78,12 +82,12 @@ generate_passphrase() {
     head -c 32 /dev/urandom | base64
 }
 
-# Get option arguments for all settable ZFS properties for a dataset
+___ "Get option arguments for all settable ZFS properties for a dataset"
 get_settable_properties_options_arguments() {
     local dataset="${1}"
     local -a args
 
-    # Get all properties that are:
+    ___ "Get all properties that are:"
     # - defined locally (source == 'local')
     # - not read-only (source != '-')
     # - have a value set (value != '-')
@@ -104,7 +108,7 @@ setup_chroot() {
     local mountpoint="${1}"
     local mounts=(proc sys dev)
 
-    # Add to global tracking array
+    ___ "Add to global tracking array"
     MOUNTED_CHROOTS+=("${mountpoint}")
 
     for mount in "${mounts[@]}"; do
@@ -127,7 +131,7 @@ cleanup_chroot() {
         umount --recursive "${mountpoint}/${mount}" 2>/dev/null || true
     done
 
-    # Remove from global tracking array
+    ___ "Remove from global tracking array"
     MOUNTED_CHROOTS=("${MOUNTED_CHROOTS[@]/${mountpoint}}")
 }
 
@@ -135,7 +139,7 @@ create_unlock_service() {
     local mountpoint="${1}"
     local service_name="zfs-dataset-unlock.service"
 
-    # Ensure the root dataset is mounted and we have write access
+    ___ "Ensure the root dataset is mounted and we have write access"
     if [[ ! -d "${mountpoint}/etc/systemd/system" ]]; then
         echo "Cannot access ${mountpoint}/etc/systemd/system. Skipping service creation."
         return 1
@@ -157,13 +161,13 @@ ExecStart=/bin/sh -c 'zfs load-key -a'
 WantedBy=zfs-mount.service
 EOF
 
-    # Set up chroot environment with error handling
+    ___ "Set up chroot environment with error handling"
     if ! setup_chroot "${mountpoint}"; then
         echo "Failed to set up chroot environment. Skipping service enablement."
         return 1
     fi
 
-    # Enable the service within a subshell to capture all errors
+    ___ "Enable the service within a subshell to capture all errors"
     if ! (chroot "${mountpoint}" systemctl enable "${service_name}"); then
         echo "Failed to enable unlock service. Manual intervention may be required."
         cleanup_chroot "${mountpoint}"
@@ -173,13 +177,13 @@ EOF
     cleanup_chroot "${mountpoint}"
 }
 
-# Find the root filesystem dataset (mounted at /)
+___ "Find the root filesystem dataset (mounted at /)"
 find_root_filesystem() {
     local pool="${1}"
     zfs list -H -o name,mountpoint | awk '$2 == "/" {print $1}'
 }
 
-# Find the encryption root dataset
+___ "Find the encryption root dataset"
 find_encryption_root() {
     local dataset="${1}"
     local encroot
@@ -230,17 +234,17 @@ encrypt_dataset() {
     echo "Processing dataset: ${dataset}"
     echo "Creating snapshot: ${snapshot_name}"
 
-    # Create snapshot with error handling
+    ___ "Create snapshot with error handling"
     if ! zfs snapshot "${snapshot_name}"; then
         echo "Failed to create snapshot for ${dataset}"
         return 1
     fi
 
-    # Get properties
+    ___ "Get properties"
     read -r -a option_arguments <<< "$(get_settable_properties_options_arguments "${dataset}")"
 
-    # If this is a root dataset or we need to access the root dataset,
-    # mount it at our temporary location
+    ___ "If this is a root dataset or we need to access the root dataset,"
+    ___ "mount it at our temporary location"
     if [[ "${mountpoint}" == "/" ]] || [[ "${dataset}" != "${root_fs}" ]]; then
         if ! zfs mount "${root_fs}"; then
             echo "Failed to mount root filesystem at temporary location"
@@ -249,11 +253,11 @@ encrypt_dataset() {
         fi
     fi
 
-    # Get the configured (final) root mountpoint for key storage
+    ___ "Get the configured (final) root mountpoint for key storage"
     configured_root_mount="$(zfs get -H -o value mountpoint "${root_fs}")"
 
 
-    # Handle root filesystem dataset
+    ___ "Handle root filesystem dataset"
     if [[ "${mountpoint}" == "/" ]]; then
         echo "Root filesystem dataset detected. Using passphrase encryption with prompt."
         local passphrase
@@ -273,16 +277,16 @@ encrypt_dataset() {
 
         echo "${passphrase}" | zfs load-key "${encrypted_dataset}"
     else
-        # For non-root datasets, we need to ensure the root filesystem is mounted
+        ___ "For non-root datasets, we need to ensure the root filesystem is mounted"
         local passphrase
 
-        # Set up both temporary and final key paths
+        ___ "Set up both temporary and final key paths"
         configured_key_file="${configured_root_mount}/.${dataset//\//_}.key"
         temp_key_file="${TEMP_ROOT_MOUNT}/.${dataset//\//_}.key"
 
         passphrase="$(generate_passphrase)"
 
-        # Create and secure key file in the temporary root filesystem location
+        ___ "Create and secure key file in the temporary root filesystem location"
         mkdir -p "$(dirname "${temp_key_file}")"
         if ! echo "${passphrase}" > "${temp_key_file}"; then
             echo "Failed to create key file ${temp_key_file}"
@@ -308,7 +312,7 @@ encrypt_dataset() {
         echo "${passphrase}" | zfs load-key "${encrypted_dataset}"
     fi
 
-    # Transfer data
+    ___ "Transfer data"
     echo "Transferring data from ${snapshot_name} to ${encrypted_dataset}"
     if ! zfs send -R "${snapshot_name}" | zfs receive "${encrypted_dataset}"; then
         echo "Failed to transfer data to ${encrypted_dataset}"
@@ -316,17 +320,17 @@ encrypt_dataset() {
         return 1
     fi
 
-    # Clean up original dataset and snapshot
+    ___ "Clean up original dataset and snapshot"
     zfs destroy -r "${snapshot_name}"
     zfs destroy -r "${dataset}"
 
-    # Rename encrypted dataset
+    ___ "Rename encrypted dataset"
     if ! zfs rename "${encrypted_dataset}" "${dataset}"; then
         echo "Failed to rename ${encrypted_dataset} to ${dataset}"
         return 1
     fi
 
-    # Unmount temporary root mount if we mounted it
+    ___ "Unmount temporary root mount if we mounted it"
     if [[ -d "${TEMP_ROOT_MOUNT}" ]]; then
         zfs unmount "${root_fs}" || true
     fi
@@ -337,10 +341,10 @@ encrypt_dataset() {
 }
 
 main() {
-    # Register cleanup function
+    ___ "Register cleanup function"
     trap cleanup EXIT INT TERM
 
-    # Ensure temp mount point exists
+    ___ "Ensure temp mount point exists"
     mkdir -p "${TEMP_ROOT_MOUNT}"
 
     echo "Exporting, then importing all available zpools, without mounting..."
@@ -350,7 +354,7 @@ main() {
         exit 1
     }
 
-    # Get list of available zpools
+    ___ "Get list of available zpools"
     local -a pools
     mapfile -t pools < "$(zpool list -H -o name | create_temp_file)"
 
@@ -359,7 +363,7 @@ main() {
         exit 1
     fi
 
-    # If multiple pools exist, let user choose which to encrypt
+    ___ "If multiple pools exist, let user choose which to encrypt"
     local selected_pool
     if [[ ${#pools[@]} -eq 1 ]]; then
         selected_pool="${pools[0]}"
@@ -375,7 +379,7 @@ main() {
 
     echo "Selected pool: ${selected_pool}"
 
-    # Find and handle root filesystem dataset first
+    ___ "Find and handle root filesystem dataset first"
     local root_fs
     root_fs="$(find_root_filesystem "${selected_pool}")"
 
@@ -385,7 +389,7 @@ main() {
             exit 1
         fi
 
-        # If root filesystem is unencrypted, encrypt it first
+        ___ "If root filesystem is unencrypted, encrypt it first"
         if [[ -z "$(find_encryption_root "${root_fs}")" ]]; then
             echo "Root filesystem is unencrypted. Encrypting it first..."
             if ! encrypt_dataset "${root_fs}"; then
@@ -395,7 +399,7 @@ main() {
         fi
     fi
 
-    # Find all remaining unencrypted datasets in the selected pool
+    ___ "Find all remaining unencrypted datasets in the selected pool"
     local -a unencrypted_datasets
     mapfile -t unencrypted_datasets < "$(zfs list -H -o name,encryption,keystatus \
         -t filesystem -s name -r "${selected_pool}" | \
@@ -409,9 +413,9 @@ main() {
 
     echo "Found ${#unencrypted_datasets[@]} unencrypted datasets."
 
-    # Process each unencrypted dataset
+    ___ "Process each unencrypted dataset"
     for dataset in "${unencrypted_datasets[@]}"; do
-        # Skip root filesystem as it's already handled
+        ___ "Skip root filesystem as it's already handled"
         if [[ "${dataset}" == "${root_fs}" ]]; then
             continue
         fi
@@ -422,7 +426,7 @@ main() {
         fi
     done
 
-    # Create and enable systemd unlock service if we encrypted anything
+    ___ "Create and enable systemd unlock service if we encrypted anything"
     if ((ENCRYPTION_COUNT > 0)); then
         if [[ -n "${root_fs}" ]]; then
             if [[ -d "${TEMP_ROOT_MOUNT}" ]]; then
