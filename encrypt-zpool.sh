@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/f84ade4/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/4715b13/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -404,6 +404,17 @@ encrypt_dataset_or_load_key() {
 
       encryption_type="${1}"
       dataset="${2}"
+
+      ___ "If already encrypted, load key instead of encrypting"
+      if zfs get -H -o value encryptionroot "${dataset}" | grep -q "^${dataset}$"; then
+          echo "Dataset ${dataset} is already encrypted. Loading key..."
+          if ! zfs load-key "${dataset}"; then
+              echo "Failed to load key for ${dataset}. Cannot proceed."
+              exit 1
+          fi
+          return 0
+      fi
+
       encrypted_dataset="${dataset}_encrypted"
       snapshot="${dataset}@pre_encryption_$(date +%Y%m%d_%H%M%S)"
       temp_mountpoint="$(get_temp_mountpoint "${dataset}")"
@@ -462,7 +473,6 @@ encrypt_dataset_or_load_key() {
 
       ___ "Rename encrypted dataset"
       zfs rename "${encrypted_dataset}" "${dataset}"
-
 }
 
 list_first_level_datasets() {
