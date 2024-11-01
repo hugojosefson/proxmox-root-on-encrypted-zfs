@@ -299,7 +299,6 @@ encrypt_dataset() {
             zfs destroy "${snapshot_name}"
             return 1
         fi
-        zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
         echo "${passphrase}" | zfs load-key "${encrypted_dataset}"
     fi
 
@@ -312,6 +311,7 @@ encrypt_dataset() {
     fi
 
     ___ "Clean up original dataset and snapshot"
+    zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
     zfs destroy -r "${snapshot_name}"
     zfs destroy -r "${dataset}"
 
