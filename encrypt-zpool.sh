@@ -38,13 +38,19 @@ set -euo pipefail
 
 # Global variables for tracking state
 declare -a MOUNTED_CHROOTS=()
+declare -a TEMP_FILES=()
 declare -i ENCRYPTION_COUNT=0
 
 # Function declarations
 cleanup() {
     local exit_code="${?}"
 
-    # First cleanup any remaining chroots
+    # Cleanup any temporary files
+    for file in "${TEMP_FILES[@]}"; do
+        rm -f "${file}" || true
+    done
+
+    # Cleanup any remaining chroots
     for mountpoint in "${MOUNTED_CHROOTS[@]}"; do
         cleanup_chroot "${mountpoint}" || true
     done
@@ -53,6 +59,16 @@ cleanup() {
     zpool export -a || true
 
     exit "${exit_code}"
+}
+
+create_temp_file() {
+    local file
+
+    file="$(mktemp)"
+    TEMP_FILES+=("${file}")
+
+    cat > "${file}"
+    echo "${file}"
 }
 
 generate_passphrase() {
@@ -83,7 +99,7 @@ get_settable_properties() {
             continue
         fi
         properties+=("${name}" "${value}")
-    done < <(zfs get -H -o property,value,source all "${dataset}")
+    done < "$(zfs get -H -o property,value,source all "${dataset}" | create_temp_file)"
 
     echo "${properties[@]}"
 }
@@ -290,7 +306,7 @@ main() {
 
     # Get list of available zpools
     local -a pools
-    mapfile -t pools < <(zpool list -H -o name)
+    mapfile -t pools < "$(zpool list -H -o name | create_temp_file)"
 
     if [[ ${#pools[@]} -eq 0 ]]; then
         echo "No zpools found. Exiting."
@@ -321,9 +337,10 @@ main() {
 
     # Find all unencrypted datasets in the selected pool
     local -a unencrypted_datasets
-    mapfile -t unencrypted_datasets < <(zfs list -H -o name,encryption,keystatus \
+    mapfile -t unencrypted_datasets < "$(zfs list -H -o name,encryption,keystatus \
         -t filesystem -s name -r "${selected_pool}" | \
-        awk '($2 == "off" || ($2 != "off" && $3 == "none")) {print $1}')
+        awk '($2 == "off" || ($2 != "off" && $3 == "none")) {print $1}' | \
+        create_temp_file)"
 
     if [[ ${#unencrypted_datasets[@]} -eq 0 ]]; then
         echo "No unencrypted datasets found in ${selected_pool}. Exiting."
