@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/5bd386c/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/dee199c/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -254,17 +254,20 @@ encrypt_dataset() {
     if [[ "${temp_mountpoint}" == "${TEMP_ROOT_MOUNT}" ]]; then
         ___ "Handle root filesystem dataset"
 
-        if ! zfs create \
-          -o encryption=aes-256-gcm \
-          -o keyformat=passphrase \
-          -o keylocation=prompt \
-          "${option_arguments[@]}" \
-          "${encrypted_dataset}"; then
-            echo "Failed to create encrypted dataset ${encrypted_dataset}"
+        ___ "Transfer data"
+        echo "Transferring data from ${snapshot_name} to ${encrypted_dataset}"
+        if ! zfs send -R "${snapshot_name}" | zfs receive -o encryption=aes-256-gcm \
+                                                                    -o keyformat=passphrase \
+                                                                    -o keylocation=prompt \
+                                                                    "${option_arguments[@]}" \
+                                                                    "${encrypted_dataset}"; then
+            echo "Failed to transfer data to ${encrypted_dataset}"
             zfs destroy "${snapshot_name}"
+            zfs destroy -r "${encrypted_dataset}"
             return 1
         fi
         zfs set -u mountpoint="/" "${encrypted_dataset}"
+
     else
         local passphrase
 
@@ -287,30 +290,25 @@ encrypt_dataset() {
         chmod 400 "${temp_key_file}"
         chattr +i "${temp_key_file}" || echo "Warning: Could not set immutable flag on ${temp_key_file}"
 
-        if ! zfs create \
-         -o encryption=aes-256-gcm \
-         -o keyformat=passphrase \
-         -o keylocation="file://${configured_key_file}" \
-         "${option_arguments[@]}" \
-         "${encrypted_dataset}"; then
-           echo "Failed to create encrypted dataset ${encrypted_dataset}"
+
+        ___ "Transfer data"
+        echo "Transferring data from ${snapshot_name} to ${encrypted_dataset}"
+        if ! zfs send -R "${snapshot_name}" | zfs receive -u -o encryption=aes-256-gcm \
+                                                                      -o keyformat=passphrase \
+                                                                      -o keylocation="file://${configured_key_file}" \
+                                                                      "${option_arguments[@]}" \
+                                                                      "${encrypted_dataset}"; then
+            echo "Failed to transfer data to ${encrypted_dataset}"
             rm -f "${temp_key_file}"
             zfs destroy "${snapshot_name}"
+            zfs destroy -r "${encrypted_dataset}"
             return 1
         fi
         echo "${passphrase}" | zfs load-key "${encrypted_dataset}"
-    fi
-
-    ___ "Transfer data"
-    echo "Transferring data from ${snapshot_name} to ${encrypted_dataset}"
-    if ! zfs send -R "${snapshot_name}" | zfs receive -F "${encrypted_dataset}"; then
-        echo "Failed to transfer data to ${encrypted_dataset}"
-        zfs destroy -r "${encrypted_dataset}"
-        return 1
+        zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
     fi
 
     ___ "Clean up original dataset and snapshot"
-    zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
     zfs destroy -r "${snapshot_name}"
     zfs destroy -r "${dataset}"
 
