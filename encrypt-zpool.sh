@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/3ccc622/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/8f08c19/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -367,7 +367,7 @@ main() {
     fi
 
     ___ "Set encryption properties on the pool itself, that all current and future datasets will inherit, except ${root_fs_dataset_first_level} which has its own encryption properties"
-    zfs set -O encryption=aes-256-gcm -O keyformat=passphrase -O keylocation="file://${CURRENT_KEY_FILE}" "${selected_pool}"
+    zfs set -o encryption=aes-256-gcm -o keyformat=passphrase -o keylocation="file://${CURRENT_KEY_FILE}" "${selected_pool}"
 
     ___ "Process each unencrypted dataset"
     for dataset in "${unencrypted_datasets[@]}"; do
@@ -378,7 +378,7 @@ main() {
     done
 
     ___ "Set correct keylocation for after boot"
-    zfs set -u -O keylocation="file://${CONFIGURED_KEY_FILE}" "${selected_pool}"
+    zfs set -u -o keylocation="file://${CONFIGURED_KEY_FILE}" "${selected_pool}"
 
     ___ "Create and enable systemd unlock service if we encrypted anything"
     if ((ENCRYPTION_COUNT > 0)); then
