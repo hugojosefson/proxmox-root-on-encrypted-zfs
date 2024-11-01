@@ -26,7 +26,7 @@
 #   - You'll be prompted for the passphrase during encryption
 #
 # Non-root datasets (mountpoint!=/)
-#   - Uses keyformat=passphrase with keylocation=file:///.${dataset_name}.key
+#   - Uses keyformat=passphrase with keylocation=file://${root_fs}/.${dataset_name}.key
 #   - Passphrases are automatically generated and stored in key files
 #   - Key files are protected (chmod 400, chattr +i)
 #
@@ -177,20 +177,39 @@ EOF
     cleanup_chroot "${mountpoint}"
 }
 
+# Find the root filesystem dataset (mounted at /)
+find_root_filesystem() {
+    local pool="${1}"
+    zfs list -H -o name,mountpoint | awk '$2 == "/" {print $1}'
+}
+
+# Find the encryption root dataset
+find_encryption_root() {
+    local dataset="${1}"
+    local encroot
+    encroot="$(zfs get -H -o value encryptionroot "${dataset}")"
+    if [[ "${encroot}" == "-" ]]; then
+        echo ""
+    else
+        echo "${encroot}"
+    fi
+}
+
 check_and_load_root_key() {
     local dataset="${1}"
     local encryption_root
+    local root_fs
 
-    # Check if dataset is encrypted
-    encryption_root="$(zfs get -H -o value encryptionroot "${dataset}")"
-
-    if [[ "${encryption_root}" != "-" ]]; then
-        echo "Root dataset ${dataset} is encrypted. Loading encryption key..."
-        if ! zfs load-key "${encryption_root}"; then
-            echo "Failed to load key for ${dataset}. Cannot proceed."
-            return 1
+    root_fs="$(find_root_filesystem "$(echo "${dataset}" | cut -d/ -f1)")"
+    if [[ "${dataset}" == "${root_fs}" ]]; then
+        encryption_root="$(find_encryption_root "${dataset}")"
+        if [[ -n "${encryption_root}" ]]; then
+            echo "Root filesystem dataset ${dataset} is encrypted. Loading encryption key..."
+            if ! zfs load-key "${encryption_root}"; then
+                echo "Failed to load key for ${dataset}. Cannot proceed."
+                return 1
+            fi
         fi
-        return 0
     fi
 
     return 0
@@ -201,11 +220,13 @@ encrypt_dataset() {
     local mountpoint
     local snapshot_name
     local encrypted_dataset
+    local root_fs
     local -a props
 
     mountpoint="$(zfs get -H -o value mountpoint "${dataset}")"
     snapshot_name="${dataset}@pre_encryption_$(date +%Y%m%d_%H%M%S)"
     encrypted_dataset="${dataset}_encrypted"
+    root_fs="$(find_root_filesystem "$(echo "${dataset}" | cut -d/ -f1)")"
 
     echo "Processing dataset: ${dataset}"
     echo "Creating snapshot: ${snapshot_name}"
@@ -214,14 +235,14 @@ encrypt_dataset() {
     if ! zfs snapshot "${snapshot_name}"; then
         echo "Failed to create snapshot for ${dataset}"
         return 1
-    fi
+    }
 
     # Get properties
     read -r -a props <<< "$(get_settable_properties "${dataset}")"
 
-    # Handle root vs non-root datasets
+    # Handle root filesystem dataset
     if [[ "${mountpoint}" == "/" ]]; then
-        echo "Root dataset detected. Using passphrase encryption with prompt."
+        echo "Root filesystem dataset detected. Using passphrase encryption with prompt."
         local passphrase
         read -r -s -p "Enter passphrase for ${dataset}: " passphrase
         echo
@@ -239,13 +260,23 @@ encrypt_dataset() {
 
         echo "${passphrase}" | zfs load-key "${encrypted_dataset}"
     else
+        # For non-root datasets, we need to ensure the root filesystem is mounted
+        # to store key files
+        local root_mount
+        root_mount="$(zfs get -H -o value mountpoint "${root_fs}")"
+        if [[ ! -d "${root_mount}" ]]; then
+            echo "Root filesystem not mounted. Cannot store key files."
+            zfs destroy "${snapshot_name}"
+            return 1
+        fi
+
         echo "Non-root dataset detected. Using passphrase encryption with key file."
-        local key_file="/.${dataset//\//_}.key"
+        local key_file="${root_mount}/.${dataset//\//_}.key"
         local passphrase
 
         passphrase="$(generate_passphrase)"
 
-        # Create and secure key file
+        # Create and secure key file in the root filesystem
         if ! echo "${passphrase}" > "${key_file}"; then
             echo "Failed to create key file ${key_file}"
             zfs destroy "${snapshot_name}"
@@ -329,13 +360,27 @@ main() {
 
     echo "Selected pool: ${selected_pool}"
 
-    # Check and load root dataset key if encrypted
-    local root_dataset="${selected_pool}"
-    if ! check_and_load_root_key "${root_dataset}"; then
-        exit 1
+    # Find and handle root filesystem dataset first
+    local root_fs
+    root_fs="$(find_root_filesystem "${selected_pool}")"
+
+    if [[ -n "${root_fs}" ]]; then
+        echo "Found root filesystem dataset: ${root_fs}"
+        if ! check_and_load_root_key "${root_fs}"; then
+            exit 1
+        fi
+
+        # If root filesystem is unencrypted, encrypt it first
+        if [[ -z "$(find_encryption_root "${root_fs}")" ]]; then
+            echo "Root filesystem is unencrypted. Encrypting it first..."
+            if ! encrypt_dataset "${root_fs}"; then
+                echo "Failed to encrypt root filesystem. Cannot proceed."
+                exit 1
+            fi
+        fi
     fi
 
-    # Find all unencrypted datasets in the selected pool
+    # Find all remaining unencrypted datasets in the selected pool
     local -a unencrypted_datasets
     mapfile -t unencrypted_datasets < "$(zfs list -H -o name,encryption,keystatus \
         -t filesystem -s name -r "${selected_pool}" | \
@@ -351,6 +396,11 @@ main() {
 
     # Process each unencrypted dataset
     for dataset in "${unencrypted_datasets[@]}"; do
+        # Skip root filesystem as it's already handled
+        if [[ "${dataset}" == "${root_fs}" ]]; then
+            continue
+        fi
+
         if ! encrypt_dataset "${dataset}"; then
             echo "Failed to encrypt ${dataset}. Continuing with remaining datasets..."
             continue
@@ -359,15 +409,17 @@ main() {
 
     # Create and enable systemd unlock service if we encrypted anything
     if ((ENCRYPTION_COUNT > 0)); then
-        local pool_mountpoint
-        pool_mountpoint="$(zfs get -H -o value mountpoint "${selected_pool}")"
-        if [[ -d "${pool_mountpoint}" ]]; then
-            echo "Creating systemd unlock service..."
-            create_unlock_service "${pool_mountpoint}"
+        if [[ -n "${root_fs}" ]]; then
+            local root_mount
+            root_mount="$(zfs get -H -o value mountpoint "${root_fs}")"
+            if [[ -d "${root_mount}" ]]; then
+                echo "Creating systemd unlock service..."
+                create_unlock_service "${root_mount}"
+            fi
         fi
 
         echo "Successfully encrypted ${ENCRYPTION_COUNT} datasets!"
-        echo "IMPORTANT: The encryption keys for non-root datasets are stored in /.${dataset_name}.key files."
+        echo "IMPORTANT: The encryption keys for non-root datasets are stored in ${root_mount}/.dataset_name.key files."
         echo "Make sure to back these up to a secure location for recovery purposes."
     else
         echo "No datasets were encrypted successfully."
