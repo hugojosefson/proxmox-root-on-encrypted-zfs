@@ -350,9 +350,9 @@ main() {
     # Register cleanup function
     trap cleanup EXIT INT TERM
 
-    # Import all zpools forcibly
-    echo "Importing all available zpools, without mounting..."
-    zpool import -a -f -N || {
+    echo "Exporting, then importing all available zpools, without mounting..."
+    zpool export -fa || true
+    zpool import -faN || {
         echo "Failed to import zpools. Exiting."
         exit 1
     }
