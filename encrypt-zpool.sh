@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-#
+# wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/b0199f8847111ae6e422dfd9cd309666a7a705fe/encrypt-zpool.sh | bash -xs -- 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -48,10 +48,10 @@ declare -i ENCRYPTION_COUNT=0
 cleanup() {
     local exit_code="${?}"
 
-    # Cleanup any temporary files
-    for file in "${TEMP_FILES[@]}"; do
-        rm -f "${file}" || true
-    done
+#    # Cleanup any temporary files
+#    for file in "${TEMP_FILES[@]}"; do
+#        rm -f "${file}" || true
+#    done
 
     # Cleanup any remaining chroots
     for mountpoint in "${MOUNTED_CHROOTS[@]}"; do
