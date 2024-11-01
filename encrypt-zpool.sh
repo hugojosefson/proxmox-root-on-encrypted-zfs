@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/978e11c/encrypt-zpool.sh | bash -xs -- 2>&1 | less
+# wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/e90e4cc/encrypt-zpool.sh | bash -xs -- 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -37,9 +37,7 @@
 set -euo pipefail
 
 ___() {
-  local output
-  output="$(printf "%-80s" "$*" | fold -s -w 80)"
-  echo -e "\n\n${output}\n" >&2
+  echo -e "\n\n${*}\n" >&2
 }
 
 ___ "Global constants"
@@ -179,10 +177,10 @@ EOF
     cleanup_chroot "${mountpoint}"
 }
 
-___ "Find the root filesystem dataset (mounted at /)"
+___ "Find the root filesystem dataset (mounted at ${TEMP_ROOT_MOUNT})"
 find_root_filesystem() {
     local pool="${1}"
-    zfs list -H -o name,mountpoint | awk '$2 == "/" {print $1}'
+    zfs list -H -o name,mountpoint | awk '$2 == "'"${TEMP_ROOT_MOUNT}"'" {print $1}'
 }
 
 ___ "Find the encryption root dataset"
@@ -245,22 +243,11 @@ encrypt_dataset() {
     ___ "Get properties"
     read -r -a option_arguments <<< "$(get_settable_properties_options_arguments "${dataset}")"
 
-    ___ "If this is a root dataset or we need to access the root dataset,"
-    ___ "mount it at our temporary location"
-    if [[ "${mountpoint}" == "/" ]] || [[ "${dataset}" != "${root_fs}" ]]; then
-        if ! zfs mount "${root_fs}"; then
-            echo "Failed to mount root filesystem at temporary location"
-            zfs destroy "${snapshot_name}"
-            return 1
-        fi
-    fi
-
     ___ "Get the configured (final) root mountpoint for key storage"
     configured_root_mount="$(zfs get -H -o value mountpoint "${root_fs}")"
 
-
-    ___ "Handle root filesystem dataset"
-    if [[ "${mountpoint}" == "/" ]]; then
+    if [[ "${mountpoint}" == "${TEMP_ROOT_MOUNT}" ]]; then
+        ___ "Handle root filesystem dataset"
         echo "Root filesystem dataset detected. Using passphrase encryption with prompt."
         local passphrase
         read -r -s -p "Enter passphrase for ${dataset}: " passphrase
@@ -279,7 +266,9 @@ encrypt_dataset() {
 
         echo "${passphrase}" | zfs load-key "${encrypted_dataset}"
     else
-        ___ "For non-root datasets, we need to ensure the root filesystem is mounted"
+        ___ "Handle non-root filesystem dataset"
+        echo "Encrypting dataset: ${dataset}"
+
         local passphrase
 
         ___ "Set up both temporary and final key paths"
@@ -332,11 +321,6 @@ encrypt_dataset() {
         return 1
     fi
 
-    ___ "Unmount temporary root mount if we mounted it"
-    if [[ -d "${TEMP_ROOT_MOUNT}" ]]; then
-        zfs unmount "${root_fs}" || true
-    fi
-
     ((ENCRYPTION_COUNT++))
     echo "Successfully encrypted dataset: ${dataset}"
     return 0
@@ -385,19 +369,24 @@ main() {
     local root_fs
     root_fs="$(find_root_filesystem "${selected_pool}")"
 
-    if [[ -n "${root_fs}" ]]; then
-        echo "Found root filesystem dataset: ${root_fs}"
-        if ! check_and_load_root_key "${root_fs}"; then
+    if [[ -z "${root_fs}" ]]; then
+        ___ "If no root filesystem is found, we have no place to store keys"
+        echo "No root filesystem found. Cannot proceed."
+        exit 1
+    fi
+
+    echo "Found root filesystem dataset: ${root_fs}"
+    ___ "If root filesystem is unencrypted, encrypt it first"
+    if [[ -z "$(find_encryption_root "${root_fs}")" ]]; then
+        echo "Root filesystem is unencrypted. Encrypting it first..."
+        if ! encrypt_dataset "${root_fs}"; then
+            echo "Failed to encrypt root filesystem. Cannot proceed."
             exit 1
         fi
-
-        ___ "If root filesystem is unencrypted, encrypt it first"
-        if [[ -z "$(find_encryption_root "${root_fs}")" ]]; then
-            echo "Root filesystem is unencrypted. Encrypting it first..."
-            if ! encrypt_dataset "${root_fs}"; then
-                echo "Failed to encrypt root filesystem. Cannot proceed."
-                exit 1
-            fi
+    else
+        ___ "If root filesystem is already encrypted, load key"
+        if ! check_and_load_root_key "${root_fs}"; then
+            exit 1
         fi
     fi
 
