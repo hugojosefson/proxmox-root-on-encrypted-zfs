@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-#   wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/encrypt-zpool/encrypt-zpool.sh | bash -s --
+#   wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/9c96db3f71ee8cfa39304972295f042f052bb0e1/encrypt-zpool.sh | bash -s --
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -351,8 +351,8 @@ main() {
     trap cleanup EXIT INT TERM
 
     # Import all zpools forcibly
-    echo "Importing all available zpools..."
-    zpool import -a -f || {
+    echo "Importing all available zpools, without mounting..."
+    zpool import -a -f -N || {
         echo "Failed to import zpools. Exiting."
         exit 1
     }
