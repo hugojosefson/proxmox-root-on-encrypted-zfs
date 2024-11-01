@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/38e1510/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/af1739e/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -52,10 +52,10 @@ ___ "Function declarations"
 cleanup() {
     local exit_code="${?}"
 
-#    # Cleanup any temporary files
-#    for file in "${TEMP_FILES[@]}"; do
-#        rm -f "${file}" || true
-#    done
+    # Cleanup any temporary files
+    for file in "${TEMP_FILES[@]}"; do
+        rm -f "${file}" || true
+    done
 
     ___ "Cleanup any remaining chroots"
     for mountpoint in "${MOUNTED_CHROOTS[@]}"; do
@@ -76,6 +76,19 @@ create_temp_file() {
 
     cat > "${file}"
     echo "${file}"
+}
+
+___ "Create a key file"
+create_key_file() {
+  local key_file
+  key_file="${1:"$(echo "" | create_temp_file)"}"
+
+  mkdir -p "$(dirname "${key_file}")"
+  touch "${key_file}"
+  chmod 400 "${key_file}"
+  cat > "${key_file}"
+  chattr +i "${key_file}" || echo "Warning: Could not set immutable flag on ${key_file}" >&2
+  echo "${key_file}"
 }
 
 generate_passphrase() {
@@ -266,11 +279,9 @@ encrypt_dataset() {
         ___ "Prompt for passphrase"
         read -r -s -p "Enter passphrase for ${dataset}: " passphrase
         echo
-        ___ "Create and secure key file in a temporary file via mktemp"
-        temp_key_file="$(mktemp)"
-        chmod 400 "${temp_key_file}"
-        echo "${passphrase}" > "${temp_key_file}"
-        chattr +i "${temp_key_file}" || echo "Warning: Could not set immutable flag on ${temp_key_file}"
+
+        ___ "Create temporary key file"
+        temp_key_file="$(echo "${passphrase}" | create_key_file)"
 
         ___ "Transfer data"
         echo "Transferring data from ${snapshot_name} to ${encrypted_dataset}"
@@ -286,6 +297,7 @@ encrypt_dataset() {
         fi
         zfs set -u keylocation="prompt" "${encrypted_dataset}"
         zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
+        rm -f "${temp_key_file}"
 
     else
         local passphrase
@@ -299,17 +311,11 @@ encrypt_dataset() {
 
         ___ "Create and secure key file in the temporary root filesystem location"
         passphrase="$(generate_passphrase)"
-        mkdir -p "$(dirname "${temp_key_file}")"
-        touch "${temp_key_file}"
-        chmod 400 "${temp_key_file}"
-        if ! echo "${passphrase}" > "${temp_key_file}"; then
+        if ! echo "${passphrase}" | create_key_file "${temp_key_file}"; then
             echo "Failed to create key file ${temp_key_file}"
             zfs destroy "${snapshot_name}"
             return 1
         fi
-
-        chattr +i "${temp_key_file}" || echo "Warning: Could not set immutable flag on ${temp_key_file}"
-
 
         ___ "Transfer data"
         echo "Transferring data from ${snapshot_name} to ${encrypted_dataset}"
@@ -454,3 +460,5 @@ main() {
 }
 
 main "$@"
+
+}
