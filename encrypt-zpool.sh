@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/cce0349/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/3ccc622/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -397,6 +397,23 @@ main() {
     echo "Exiting..."
 }
 
+is_key_loaded_for() {
+    local encryption_root
+    local key_status
+
+    encryption_root="${1}"
+    key_status="$(zfs get -H -o value keystatus "${encryption_root}")"
+
+    if [[ "${key_status}" == "available" ]]; then
+        return 0
+    fi
+    if [[ "${key_status}" == "unavailable" ]]; then
+        return 1
+    fi
+    echo "ERROR: Unknown keystatus \"${key_status}\" for encryptionroot ${encryption_root}" >&2
+    exit 1
+}
+
 encrypt_dataset_or_load_key() {
       local encryption_type
       local dataset
@@ -411,16 +428,22 @@ encrypt_dataset_or_load_key() {
 
       ___ "If already encrypted, load key instead of encrypting"
       if is_encrypted "${dataset}"; then
-          echo "Dataset ${dataset} is already encrypted. Loading key..."
+          echo "Dataset ${dataset} is already encrypted. Loading key..." >&2
           local encryption_root
           encryption_root="$(find_encryption_root "${dataset}")"
           if [[ -z "${encryption_root}" ]]; then
-              echo "Dataset ${dataset} has no encryption root. Cannot proceed."
+              echo "Dataset ${dataset} has no encryption root. Cannot proceed." >&2
               exit 1
           fi
-          if ! zfs load-key "${encryption_root}"; then
-              echo "Failed to load key for ${dataset}, whose encryption root is ${encryption_root}. Cannot proceed."
-              exit 1
+          if ! is_key_loaded_for "${encryption_root}"; then
+              echo "Encryption root ${encryption_root} is not loaded. Loading key..." >&2
+              if ! zfs load-key "${encryption_root}"; then
+                  echo "Failed to load key for ${dataset}, whose encryption root is ${encryption_root}. Cannot proceed." >&2
+                  exit 1
+              fi
+              echo "Key loaded for ${encryption_root}." >&2
+          else
+              echo "Key already loaded for ${encryption_root}." >&2
           fi
           return 0
       fi
