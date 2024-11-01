@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-#   wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/9c96db3f71ee8cfa39304972295f042f052bb0e1/encrypt-zpool.sh | bash -s --
+#   wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/55c150e/encrypt-zpool.sh | bash -xs -- 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -307,7 +307,7 @@ encrypt_dataset() {
                        -o keyformat=passphrase \
                        -o keylocation="file://${configured_key_file}" \
                        -o mountpoint="${mountpoint}" \
-                       "${props[@]}" \
+                       "${props[@]/#/-o }" \
                        "${encrypted_dataset}"; then
             echo "Failed to create encrypted dataset ${encrypted_dataset}"
             rm -f "${temp_key_file}"
