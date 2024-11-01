@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/0be1226/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh 2>&1 | less
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/50049d2/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -415,17 +415,15 @@ encrypt_dataset_or_load_key() {
       fi
 
       if [[ "${encryption_type}" == "file" ]]; then
-          mapfile -t dataset_option_arguments < "$(get_settable_properties_options_arguments "${dataset}" encryption keyformat keylocation | create_temp_file)"
           dataset_option_arguments+=("-o" "encryption=aes-256-gcm")
           dataset_option_arguments+=("-o" "keyformat=passphrase")
           dataset_option_arguments+=("-o" "keylocation=file://${CONFIGURED_KEY_FILE}")
       elif [[ "${encryption_type}" == "prompt" ]]; then
-          mapfile -t dataset_option_arguments < "$(get_settable_properties_options_arguments "${dataset}" encryption keyformat keylocation | create_temp_file)"
           dataset_option_arguments+=("-o" "encryption=aes-256-gcm")
           dataset_option_arguments+=("-o" "keyformat=passphrase")
           dataset_option_arguments+=("-o" "keylocation=prompt")
       elif [[ "${encryption_type}" == "inherit" ]]; then
-          mapfile -t dataset_option_arguments < "$(get_settable_properties_options_arguments "${dataset}" | create_temp_file)"
+          : # nothing to do, just inherit
       else
           echo "Unknown encryption type: ${encryption_type}" >&2
           exit 1
