@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-#   wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/d8e5a51/encrypt-zpool.sh | bash -xs -- 2>&1 | less
+#   wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/f393ca8/encrypt-zpool.sh | bash -xs -- 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -84,25 +84,18 @@ get_settable_properties() {
     local -a properties
 
     # Get all properties that are:
+    # - defined locally (source == 'local')
     # - not read-only (source != '-')
-    # - not inherited (source != 'inherited')
-    # - not default (source != 'default')
     # - have a value set (value != '-')
     while IFS=$'\t' read -r name value source; do
         if [[ "${source}" == "-" ]]; then
-            continue
-        fi
-        if [[ "${source}" == "inherited" ]]; then
-            continue
-        fi
-        if [[ "${source}" == "default" ]]; then
             continue
         fi
         if [[ "${value}" == "-" ]]; then
             continue
         fi
         properties+=("${name}" "${value}")
-    done < "$(zfs get -H -o property,value,source all "${dataset}" | create_temp_file)"
+    done < "$(zfs get -pH -s local -o property,value,source all "${dataset}" | create_temp_file)"
 
     echo "${properties[@]}"
 }
@@ -245,6 +238,10 @@ encrypt_dataset() {
 
     # Get properties
     read -r -a props <<< "$(get_settable_properties "${dataset}")"
+    local option_arguments=()
+    for ((i=0; i<${#props[@]}; i+=2)); do
+       option_arguments+=(-o "${props[i]}=${props[i+1]}")
+    done
 
     # If this is a root dataset or we need to access the root dataset,
     # mount it at our temporary location
@@ -271,7 +268,7 @@ encrypt_dataset() {
                        -o keyformat=passphrase \
                        -o keylocation=prompt \
                        -o mountpoint="${mountpoint}" \
-                       "${props[@]/#/-o }" \
+                       "${option_arguments[@]}" \
                        "${encrypted_dataset}"; then
             echo "Failed to create encrypted dataset ${encrypted_dataset}"
             zfs destroy "${snapshot_name}"
@@ -301,12 +298,12 @@ encrypt_dataset() {
         chattr +i "${temp_key_file}" || echo "Warning: Could not set immutable flag on ${temp_key_file}"
 
         if ! zfs create -o encryption=aes-256-gcm \
-                       -o keyformat=passphrase \
-                       -o keylocation="file://${configured_key_file}" \
-                       -o mountpoint="${mountpoint}" \
-                       "${props[@]/#/-o }" \
-                       "${encrypted_dataset}"; then
-            echo "Failed to create encrypted dataset ${encrypted_dataset}"
+         -o keyformat=passphrase \
+         -o keylocation="file://${configured_key_file}" \
+         -o mountpoint="${mountpoint}" \
+         "${option_arguments[@]}" \
+         "${encrypted_dataset}"; then
+           echo "Failed to create encrypted dataset ${encrypted_dataset}"
             rm -f "${temp_key_file}"
             zfs destroy "${snapshot_name}"
             return 1
