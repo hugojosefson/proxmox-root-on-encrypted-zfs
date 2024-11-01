@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/0b10208/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/3d60087/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -105,8 +105,8 @@ generate_passphrase() {
 ___ "Get option arguments for all settable ZFS properties for a dataset"
 get_settable_properties_options_arguments() {
     local dataset
-    local -a except_keys
-    local -a result
+    local -a except_keys=()
+    local -a result=()
 
     dataset="${1}"
     except_keys=("${@:2}")
@@ -266,7 +266,7 @@ main() {
     }
 
     ___ "Get list of available zpools"
-    local -a pools
+    local -a pools=()
     mapfile -t pools < "$(zpool list -H -o name | create_temp_file)"
 
     if [[ ${#pools[@]} -eq 0 ]]; then
@@ -304,7 +304,7 @@ main() {
     # DONE: zfs set -u keylocation="${CONFIGURED_KEY_FILE}" "${selected_pool}"
 
     ___ "Collect first-level datasets"
-    local -a first_level_datasets
+    local -a first_level_datasets=()
     mapfile -t first_level_datasets < "$(list_first_level_datasets "${selected_pool}" | create_temp_file)"
 
     ___ "Find root filesystem dataset"
@@ -331,7 +331,7 @@ main() {
     ___ "Encrypt ${root_fs_dataset_first_level} with -o keylocation=prompt"
     encrypt_dataset_or_load_key "prompt" "${root_fs_dataset_first_level}"
 
-    local -a root_fs_dataset_and_ancestors_with_oldest_first_except_first_level
+    local -a root_fs_dataset_and_ancestors_with_oldest_first_except_first_level=()
     mapfile -t root_fs_dataset_and_ancestors_with_oldest_first_except_first_level < <(get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level "${root_fs_dataset_first_level}" "${root_fs_dataset}")
 
     ___ "Encrypt the rest of the ${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[*]} datasets with inherited encryption properties"
@@ -340,7 +340,7 @@ main() {
     done
 
     ___ "Find all remaining unencrypted datasets in the selected pool"
-    local -a unencrypted_datasets
+    local -a unencrypted_datasets=()
     mapfile -t unencrypted_datasets < "$(zfs list -H -o name,encryption,keystatus \
         -t filesystem -s name -r "${selected_pool}" | \
         awk '($2 == "off" || ($2 != "off" && $3 == "none")) {print $1}' | \
@@ -400,7 +400,7 @@ encrypt_dataset_or_load_key() {
       local snapshot
       local temp_mountpoint
       local final_mountpoint
-      local -a dataset_option_arguments
+      local -a dataset_option_arguments=()
 
       encryption_type="${1}"
       dataset="${2}"
@@ -479,7 +479,7 @@ get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level() {
     local root_fs_dataset_first_level="${1}"
     local root_fs_dataset="${2}"
     local current
-    local -a ancestors
+    local -a ancestors=()
 
     if [[ -z "${root_fs_dataset_first_level}" ]]; then
         echo "ERROR: root_fs_dataset_first_level must be supplied as first argument" >&2
