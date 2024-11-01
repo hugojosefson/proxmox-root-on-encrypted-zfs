@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/d7f4d52/encrypt-zpool.sh | bash -xs -- 2>&1 | less
+# wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/978e11c/encrypt-zpool.sh | bash -xs -- 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -37,7 +37,9 @@
 set -euo pipefail
 
 ___() {
-  echo -e "\e[1m\e[32m>>> $*\e[0m" >&2
+  local output
+  output="$(printf "%-80s" "$*" | fold -s -w 80)"
+  echo -e "\n\n${output}\n" >&2
 }
 
 ___ "Global constants"
