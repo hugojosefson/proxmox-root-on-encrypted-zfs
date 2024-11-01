@@ -36,6 +36,9 @@
 
 set -euo pipefail
 
+# Global constants
+readonly TEMP_ROOT_MOUNT="/mnt/tmp_encryption"
+
 # Global variables for tracking state
 declare -a MOUNTED_CHROOTS=()
 declare -a TEMP_FILES=()
@@ -222,6 +225,9 @@ encrypt_dataset() {
     local encrypted_dataset
     local root_fs
     local -a props
+    local configured_root_mount
+    local configured_key_file
+    local temp_key_file
 
     mountpoint="$(zfs get -H -o value mountpoint "${dataset}")"
     snapshot_name="${dataset}@pre_encryption_$(date +%Y%m%d_%H%M%S)"
@@ -235,10 +241,27 @@ encrypt_dataset() {
     if ! zfs snapshot "${snapshot_name}"; then
         echo "Failed to create snapshot for ${dataset}"
         return 1
-    }
+    fi
 
     # Get properties
     read -r -a props <<< "$(get_settable_properties "${dataset}")"
+
+    # Ensure temp mount point exists
+    mkdir -p "${TEMP_ROOT_MOUNT}"
+
+    # If this is a root dataset or we need to access the root dataset,
+    # mount it at our temporary location
+    if [[ "${mountpoint}" == "/" ]] || [[ "${dataset}" != "${root_fs}" ]]; then
+        if ! zfs mount -o mountpoint="${TEMP_ROOT_MOUNT}" "${root_fs}"; then
+            echo "Failed to mount root filesystem at temporary location"
+            zfs destroy "${snapshot_name}"
+            return 1
+        fi
+    fi
+
+    # Get the configured (final) root mountpoint for key storage
+    configured_root_mount="$(zfs get -H -o value mountpoint "${root_fs}")"
+
 
     # Handle root filesystem dataset
     if [[ "${mountpoint}" == "/" ]]; then
@@ -261,39 +284,33 @@ encrypt_dataset() {
         echo "${passphrase}" | zfs load-key "${encrypted_dataset}"
     else
         # For non-root datasets, we need to ensure the root filesystem is mounted
-        # to store key files
-        local root_mount
-        root_mount="$(zfs get -H -o value mountpoint "${root_fs}")"
-        if [[ ! -d "${root_mount}" ]]; then
-            echo "Root filesystem not mounted. Cannot store key files."
-            zfs destroy "${snapshot_name}"
-            return 1
-        fi
-
-        echo "Non-root dataset detected. Using passphrase encryption with key file."
-        local key_file="${root_mount}/.${dataset//\//_}.key"
         local passphrase
+
+        # Set up both temporary and final key paths
+        configured_key_file="${configured_root_mount}/.${dataset//\//_}.key"
+        temp_key_file="${TEMP_ROOT_MOUNT}/.${dataset//\//_}.key"
 
         passphrase="$(generate_passphrase)"
 
-        # Create and secure key file in the root filesystem
-        if ! echo "${passphrase}" > "${key_file}"; then
-            echo "Failed to create key file ${key_file}"
+        # Create and secure key file in the temporary root filesystem location
+        mkdir -p "$(dirname "${temp_key_file}")"
+        if ! echo "${passphrase}" > "${temp_key_file}"; then
+            echo "Failed to create key file ${temp_key_file}"
             zfs destroy "${snapshot_name}"
             return 1
         fi
 
-        chmod 400 "${key_file}"
-        chattr +i "${key_file}" || echo "Warning: Could not set immutable flag on ${key_file}"
+        chmod 400 "${temp_key_file}"
+        chattr +i "${temp_key_file}" || echo "Warning: Could not set immutable flag on ${temp_key_file}"
 
         if ! zfs create -o encryption=aes-256-gcm \
                        -o keyformat=passphrase \
-                       -o keylocation="file://${key_file}" \
+                       -o keylocation="file://${configured_key_file}" \
                        -o mountpoint="${mountpoint}" \
-                       "${props[@]/#/-o }" \
+                       "${props[@]}" \
                        "${encrypted_dataset}"; then
             echo "Failed to create encrypted dataset ${encrypted_dataset}"
-            rm -f "${key_file}"
+            rm -f "${temp_key_file}"
             zfs destroy "${snapshot_name}"
             return 1
         fi
@@ -317,6 +334,11 @@ encrypt_dataset() {
     if ! zfs rename "${encrypted_dataset}" "${dataset}"; then
         echo "Failed to rename ${encrypted_dataset} to ${dataset}"
         return 1
+    fi
+
+    # Unmount temporary root mount if we mounted it
+    if [[ -d "${TEMP_ROOT_MOUNT}" ]]; then
+        zfs unmount "${root_fs}" || true
     fi
 
     ((ENCRYPTION_COUNT++))
@@ -410,17 +432,15 @@ main() {
     # Create and enable systemd unlock service if we encrypted anything
     if ((ENCRYPTION_COUNT > 0)); then
         if [[ -n "${root_fs}" ]]; then
-            local root_mount
-            root_mount="$(zfs get -H -o value mountpoint "${root_fs}")"
-            if [[ -d "${root_mount}" ]]; then
+            if [[ -d "${TEMP_ROOT_MOUNT}" ]]; then
                 echo "Creating systemd unlock service..."
-                create_unlock_service "${root_mount}"
+                create_unlock_service "${TEMP_ROOT_MOUNT}"
             fi
         fi
 
         echo "Successfully encrypted ${ENCRYPTION_COUNT} datasets!"
-        echo "IMPORTANT: The encryption keys for non-root datasets are stored in ${root_mount}/.dataset_name.key files."
-        echo "Make sure to back these up to a secure location for recovery purposes."
+        echo "IMPORTANT: You will find the encryption keys for non-root datasets in /.\${dataset_name}.key files, after boot."
+        echo "Make sure to back them up to a secure location for recovery purposes."
     else
         echo "No datasets were encrypted successfully."
     fi
