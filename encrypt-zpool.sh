@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/e81684f/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/f84ade4/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -332,7 +332,7 @@ main() {
     encrypt_dataset_or_load_key "prompt" "${root_fs_dataset_first_level}"
 
     local -a root_fs_dataset_and_ancestors_with_oldest_first_except_first_level=()
-    mapfile -t root_fs_dataset_and_ancestors_with_oldest_first_except_first_level < <(get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level "${root_fs_dataset_first_level}" "${root_fs_dataset}")
+    mapfile -t root_fs_dataset_and_ancestors_with_oldest_first_except_first_level < "$(get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level "${root_fs_dataset_first_level}" "${root_fs_dataset}" | create_temp_file)"
 
     ___ "Encrypt the rest of the ${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[*]} datasets with inherited encryption properties"
     for dataset in "${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[@]}"; do
