@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-#   wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/f393ca8/encrypt-zpool.sh | bash -xs -- 2>&1 | less
+#
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -78,10 +78,10 @@ generate_passphrase() {
     head -c 32 /dev/urandom | base64
 }
 
-# Get all settable ZFS properties for a dataset
-get_settable_properties() {
+# Get option arguments for all settable ZFS properties for a dataset
+get_settable_properties_options_arguments() {
     local dataset="${1}"
-    local -a properties
+    local -a args
 
     # Get all properties that are:
     # - defined locally (source == 'local')
@@ -94,10 +94,10 @@ get_settable_properties() {
         if [[ "${value}" == "-" ]]; then
             continue
         fi
-        properties+=("${name}" "${value}")
+        args+=("-o" "${name}=${value}")
     done < "$(zfs get -pH -s local -o property,value,source all "${dataset}" | create_temp_file)"
 
-    echo "${properties[@]}"
+    echo "${args[@]}"
 }
 
 setup_chroot() {
@@ -217,7 +217,7 @@ encrypt_dataset() {
     local snapshot_name
     local encrypted_dataset
     local root_fs
-    local -a props
+    local -a option_arguments
     local configured_root_mount
     local configured_key_file
     local temp_key_file
@@ -237,11 +237,7 @@ encrypt_dataset() {
     fi
 
     # Get properties
-    read -r -a props <<< "$(get_settable_properties "${dataset}")"
-    local option_arguments=()
-    for ((i=0; i<${#props[@]}; i+=2)); do
-       option_arguments+=(-o "${props[i]}=${props[i+1]}")
-    done
+    read -r -a option_arguments <<< "$(get_settable_properties_options_arguments "${dataset}")"
 
     # If this is a root dataset or we need to access the root dataset,
     # mount it at our temporary location
