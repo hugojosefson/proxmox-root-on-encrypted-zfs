@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/dee199c/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/38e1510/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -231,7 +231,11 @@ encrypt_dataset() {
     local temp_key_file
 
     temp_mountpoint="$(zfs get -H -o value mountpoint "${dataset}")"
-    final_mountpoint="${temp_mountpoint#"${TEMP_ROOT_MOUNT}"}"
+    if [[ "${temp_mountpoint}" == "${TEMP_ROOT_MOUNT}" ]]; then
+        final_mountpoint="/"
+    else
+        final_mountpoint="${temp_mountpoint#"${TEMP_ROOT_MOUNT}"}"
+    fi
     snapshot_name="${dataset}@pre_encryption_$(date +%Y%m%d_%H%M%S)"
     encrypted_dataset="${dataset}_encrypted"
     root_fs="$(find_root_filesystem "$(echo "${dataset}" | cut -d/ -f1)")"
@@ -254,11 +258,25 @@ encrypt_dataset() {
     if [[ "${temp_mountpoint}" == "${TEMP_ROOT_MOUNT}" ]]; then
         ___ "Handle root filesystem dataset"
 
+        ___ "Check that we have a TTY"
+        if [[ ! -t 0 ]]; then
+            echo "No TTY detected. Cannot prompt for passphrase. Exiting." >&2
+            exit 1
+        fi
+        ___ "Prompt for passphrase"
+        read -r -s -p "Enter passphrase for ${dataset}: " passphrase
+        echo
+        ___ "Create and secure key file in a temporary file via mktemp"
+        temp_key_file="$(mktemp)"
+        chmod 400 "${temp_key_file}"
+        echo "${passphrase}" > "${temp_key_file}"
+        chattr +i "${temp_key_file}" || echo "Warning: Could not set immutable flag on ${temp_key_file}"
+
         ___ "Transfer data"
         echo "Transferring data from ${snapshot_name} to ${encrypted_dataset}"
         if ! zfs send -R "${snapshot_name}" | zfs receive -o encryption=aes-256-gcm \
                                                                     -o keyformat=passphrase \
-                                                                    -o keylocation=prompt \
+                                                                    -o keylocation="file://${temp_key_file}" \
                                                                     "${option_arguments[@]}" \
                                                                     "${encrypted_dataset}"; then
             echo "Failed to transfer data to ${encrypted_dataset}"
@@ -266,7 +284,8 @@ encrypt_dataset() {
             zfs destroy -r "${encrypted_dataset}"
             return 1
         fi
-        zfs set -u mountpoint="/" "${encrypted_dataset}"
+        zfs set -u keylocation="prompt" "${encrypted_dataset}"
+        zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
 
     else
         local passphrase
@@ -281,13 +300,14 @@ encrypt_dataset() {
         ___ "Create and secure key file in the temporary root filesystem location"
         passphrase="$(generate_passphrase)"
         mkdir -p "$(dirname "${temp_key_file}")"
+        touch "${temp_key_file}"
+        chmod 400 "${temp_key_file}"
         if ! echo "${passphrase}" > "${temp_key_file}"; then
             echo "Failed to create key file ${temp_key_file}"
             zfs destroy "${snapshot_name}"
             return 1
         fi
 
-        chmod 400 "${temp_key_file}"
         chattr +i "${temp_key_file}" || echo "Warning: Could not set immutable flag on ${temp_key_file}"
 
 
