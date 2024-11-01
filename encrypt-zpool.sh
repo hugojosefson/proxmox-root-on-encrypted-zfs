@@ -560,8 +560,8 @@ find_root_fs_dataset_first_level() {
 }
 
 get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_and_last_level() {
-    local root_fs_dataset_first_level="${1}"
-    local root_fs_dataset="${2}"
+    local root_fs_dataset_first_level="${1}" # e.g. rpool/ROOT
+    local root_fs_dataset="${2}"             # e.g. rpool/ROOT/pve-1
     local current
     local -a ancestors=()
 
@@ -573,9 +573,16 @@ get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_and_last_level(
         echo "ERROR: root_fs_dataset must be supplied as second argument" >&2
         return 1
     fi
+    if [[ "${root_fs_dataset}" == "${root_fs_dataset_first_level}" ]]; then
+        return 0
+    fi
+    if [[ ! "${root_fs_dataset}" =~ ^"${root_fs_dataset_first_level}"/ ]]; then
+        echo "ERROR: second argument must be the same as, or a descendant of first argument" >&2
+        return 1
+    fi
 
     current="${root_fs_dataset}"
-    while [[ "${current}" != "${root_fs_dataset_first_level}" ]]; do
+    while [[ "${current}" != "${root_fs_dataset_first_level}" && "${current}" == *"/"* ]]; do
         ancestors+=("${current}")
         current="${current%/*}"
     done
