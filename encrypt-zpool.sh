@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/e6c4221/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh 2>&1 | tee encrypt-zpool.log; less encrypt-zpool.log
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/9139f43/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh 2>&1 | tee encrypt-zpool.log; less encrypt-zpool.log
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -559,7 +559,7 @@ find_root_fs_dataset_first_level() {
     return 1
 }
 
-get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level() {
+get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_and_last_level() {
     local root_fs_dataset_first_level="${1}"
     local root_fs_dataset="${2}"
     local current
@@ -581,7 +581,7 @@ get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level() {
     done
 
     # Print in reverse order (oldest first)
-    for ((i=${#ancestors[@]}-1; i>=0; i--)); do
+    for ((i=${#ancestors[@]}-1; i>=1; i--)); do
         echo "${ancestors[i]}"
     done
 }
