@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/c5c6d3b/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && echo asdasdasd | bash -x ./encrypt-zpool.sh 2>&1 | less
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/1b0a12b/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && echo asdasdasd | bash -x ./encrypt-zpool.sh 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -474,7 +474,7 @@ encrypt_dataset_or_load_key() {
       zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
       ((ENCRYPTION_COUNT+=1))
 
-      ___ "Have the user choose a new encryption passphrase"
+      ___ "Have the user choose a new encryption passphrase? (if prompt)"
       if [[ "${encryption_type}" == "prompt" ]]; then
           until zfs change-key -o keylocation="prompt" "${encrypted_dataset}"; do
               echo "Failed to change encryption passphrase on ${encrypted_dataset}. Try again. When you succeed, it will replace ${dataset}." >&2
