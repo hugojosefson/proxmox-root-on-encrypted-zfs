@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-#   wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/268abca/encrypt-zpool.sh | bash -xs -- 2>&1 | less
+#   wget -O- https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/d8e5a51/encrypt-zpool.sh | bash -xs -- 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -246,13 +246,10 @@ encrypt_dataset() {
     # Get properties
     read -r -a props <<< "$(get_settable_properties "${dataset}")"
 
-    # Ensure temp mount point exists
-    mkdir -p "${TEMP_ROOT_MOUNT}"
-
     # If this is a root dataset or we need to access the root dataset,
     # mount it at our temporary location
     if [[ "${mountpoint}" == "/" ]] || [[ "${dataset}" != "${root_fs}" ]]; then
-        if ! zfs mount -o mountpoint="${TEMP_ROOT_MOUNT}" "${root_fs}"; then
+        if ! zfs mount "${root_fs}"; then
             echo "Failed to mount root filesystem at temporary location"
             zfs destroy "${snapshot_name}"
             return 1
@@ -349,6 +346,9 @@ encrypt_dataset() {
 main() {
     # Register cleanup function
     trap cleanup EXIT INT TERM
+
+    # Ensure temp mount point exists
+    mkdir -p "${TEMP_ROOT_MOUNT}"
 
     echo "Exporting, then importing all available zpools, without mounting..."
     zpool export -fa || true
