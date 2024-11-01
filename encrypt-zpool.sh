@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/4715b13/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/cb16240/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -251,6 +251,10 @@ find_encryption_root() {
     fi
 }
 
+is_encrypted() {
+    [[ -n "$(find_encryption_root "${1}")" ]]
+}
+
 main() {
     ___ "Register cleanup function"
     trap cleanup EXIT INT TERM
@@ -406,7 +410,7 @@ encrypt_dataset_or_load_key() {
       dataset="${2}"
 
       ___ "If already encrypted, load key instead of encrypting"
-      if zfs get -H -o value encryptionroot "${dataset}" | grep -q "^${dataset}$"; then
+      if is_encrypted "${dataset}"; then
           echo "Dataset ${dataset} is already encrypted. Loading key..."
           if ! zfs load-key "${dataset}"; then
               echo "Failed to load key for ${dataset}. Cannot proceed."
