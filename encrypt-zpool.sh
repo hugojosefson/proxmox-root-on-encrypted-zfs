@@ -62,7 +62,9 @@ cleanup() {
         cleanup_chroot "${mountpoint}" || true
     done
 
+
     echo "Exporting all zpools..."
+    zfs umount -a || true
     zpool export -a || true
 
     exit "${exit_code}"
@@ -97,14 +99,25 @@ generate_passphrase() {
 
 ___ "Get option arguments for all settable ZFS properties for a dataset"
 get_settable_properties_options_arguments() {
-    local dataset="${1}"
+    local dataset
+    dataset="${1}"
     local -a args
 
+
     ___ "Get all properties that are:"
-    ___ " - defined locally (source == 'local')"
+    ___ " - not default (source != 'default')"
+    ___ " - not inherited (source does not start with 'inherited')"
     ___ " - not read-only (source != '-')"
     ___ " - have a value set (value != '-')"
     while IFS=$'\t' read -r name value source; do
+        if [[ "${source}" == "default" ]]; then
+            echo "Skipping property ${name} with value ${value} and source ${source}, because it is default." >&2
+            continue
+        fi
+        if [[ "${source}" =~ ^inherited ]]; then
+            echo "Skipping property ${name} with value ${value} and source ${source}, because it is inherited." >&2
+            continue
+        fi
         if [[ "${source}" == "-" ]]; then
             echo "Skipping property ${name} with value ${value} and source ${source}, because it is read-only." >&2
             continue
@@ -115,13 +128,14 @@ get_settable_properties_options_arguments() {
         fi
         echo "Adding property ${name} with value ${value} (source ${source}) to list of settable properties arguments." >&2
         args+=("-o" "${name}=${value}")
-    done < "$(zfs get -pH -s local -o property,value,source all "${dataset}" | create_temp_file)"
+    done < "$(zfs get -pH -o property,value,source all "${dataset}" | create_temp_file)"
 
     echo "${args[@]}"
 }
 
 setup_chroot() {
-    local mountpoint="${1}"
+    local mountpoint
+    mountpoint="${1}"
     local mounts=(proc sys dev)
 
     ___ "Add to global tracking array"
@@ -140,7 +154,8 @@ setup_chroot() {
 }
 
 cleanup_chroot() {
-    local mountpoint="${1}"
+    local mountpoint
+    mountpoint="${1}"
     local mounts=(dev sys proc)
 
     for mount in "${mounts[@]}"; do
@@ -152,7 +167,8 @@ cleanup_chroot() {
 }
 
 create_unlock_service() {
-    local mountpoint="${1}"
+    local mountpoint
+    mountpoint="${1}"
     local service_name="zfs-dataset-unlock.service"
 
     ___ "Ensure the root dataset is mounted and we have write access"
@@ -195,15 +211,20 @@ EOF
 
 ___ "Find the root filesystem dataset (mounted at ${TEMP_ROOT_MOUNT})"
 find_root_filesystem() {
-    local pool="${1}"
+    local pool
+    pool="${1}"
+
     zfs list -H -o name,mountpoint | awk '$2 == "'"${TEMP_ROOT_MOUNT}"'" {print $1}'
 }
 
 ___ "Find the encryption root dataset"
 find_encryption_root() {
-    local dataset="${1}"
+    local dataset=
+    dataset="${1}"
+
     local encroot
     encroot="$(zfs get -H -o value encryptionroot "${dataset}")"
+
     if [[ "${encroot}" == "-" ]]; then
         echo ""
     else
@@ -212,7 +233,8 @@ find_encryption_root() {
 }
 
 check_and_load_root_key() {
-    local dataset="${1}"
+    local dataset=
+    dataset="${1}"
     local encryption_root
     local root_fs
 
@@ -232,7 +254,8 @@ check_and_load_root_key() {
 }
 
 encrypt_dataset() {
-    local dataset="${1}"
+    local dataset=
+    dataset="${1}"
     local temp_mountpoint
     local final_mountpoint
     local snapshot_name
