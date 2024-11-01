@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/b8188fd/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && echo asdasdasd | bash -x ./encrypt-zpool.sh 2>&1 | less
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/c5c6d3b/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && echo asdasdasd | bash -x ./encrypt-zpool.sh 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -347,7 +347,7 @@ main() {
     echo "Found ${#unencrypted_datasets[@]} unencrypted datasets."
 
     ___ "Create ${CURRENT_KEY_FILE}, unless already exists and is not empty"
-    zfs mount "${TEMP_ROOT_MOUNT}"
+    zfs mount "${root_fs_dataset}"
     if [[ -s "${CURRENT_KEY_FILE}" ]]; then
         echo "Key file ${CURRENT_KEY_FILE} already exists and is not empty. Skipping creation." >&2
     else
