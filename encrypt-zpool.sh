@@ -469,7 +469,7 @@ encrypt_dataset_or_load_key() {
 
       ___ "Transfer data"
       echo "Transferring data from ${snapshot} to ${encrypted_dataset}"
-      if ! zfs send -R "${snapshot}" | zfs receive -u "${dataset_option_arguments[@]}" "${encrypted_dataset}"; then
+      if ! zfs send "${snapshot}" | zfs receive -u "${dataset_option_arguments[@]}" "${encrypted_dataset}"; then
           echo "Failed to transfer data to ${encrypted_dataset}"
           zfs destroy -r "${snapshot}"
           zfs destroy -r "${encrypted_dataset}"
