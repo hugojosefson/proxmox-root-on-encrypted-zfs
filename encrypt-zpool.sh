@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/d143fea/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh 2>&1 | tee encrypt-zpool.log; less encrypt-zpool.log
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/e6c4221/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh 2>&1 | tee encrypt-zpool.log; less encrypt-zpool.log
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -332,7 +332,7 @@ Actual: ${root_fs_dataset}
     local root_fs_dataset_first_level
     root_fs_dataset_first_level="$(find_root_fs_dataset_first_level "${root_fs_dataset}" "${first_level_datasets[@]}")"
     if [[ "${root_fs_dataset_first_level}" != "${root_fs_dataset_first_level_expected}" ]]; then
-        echo "ERROR: Unexpected root filesystem's first-level dataset found. Cannot proceed.
+        echo "ERROR: Unexpected root_fs_dataset_first_level found. Cannot proceed.
 
 Expected: ${root_fs_dataset_first_level_expected}
 Actual: ${root_fs_dataset_first_level}
@@ -353,7 +353,7 @@ Actual: ${root_fs_dataset_first_level}
     local -a root_fs_dataset_and_ancestors_with_oldest_first_except_first_level=()
     mapfile -t root_fs_dataset_and_ancestors_with_oldest_first_except_first_level < "$(get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level "${root_fs_dataset_first_level}" "${root_fs_dataset}" | create_temp_file)"
     if ! arrays_equal "${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[*]}" "${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level_expected[*]}"; then
-        echo "ERROR: Unexpected root filesystem's first-level dataset found. Cannot proceed.
+        echo "ERROR: Unexpected root_fs_dataset_and_ancestors_with_oldest_first_except_first_level found. Cannot proceed.
 
 Expected: ${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level_expected[*]}
 Actual: ${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[*]}
