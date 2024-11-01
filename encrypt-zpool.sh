@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/fb076dd/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && echo asdasdasd | bash -x ./encrypt-zpool.sh 2>&1 | less
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/2ca839a/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && echo asdasdasd | bash -x ./encrypt-zpool.sh 2>&1 | less
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -295,12 +295,12 @@ main() {
     echo "Selected pool: ${selected_pool}"
 
     ___ "Collect first-level datasets"
-    local -a first_level_datasets=()
-    mapfile -t first_level_datasets < "$(list_first_level_datasets "${selected_pool}" | create_temp_file)"
+    local -a first_level_datasets=(rpool/ROOT rpool/data rpool/var-lib-vz)
+#    mapfile -t first_level_datasets < "$(list_first_level_datasets "${selected_pool}" | create_temp_file)"
 
     ___ "Find root filesystem dataset"
-    local root_fs_dataset
-    root_fs_dataset="$(find_root_filesystem "${selected_pool}")"
+    local root_fs_dataset=rpool/ROOT/pve-1
+#    root_fs_dataset="$(find_root_filesystem "${selected_pool}")"
 
     if [[ -z "${root_fs_dataset}" ]]; then
         ___ "Root filesystem dataset not found, we have no place to store keys"
@@ -310,8 +310,8 @@ main() {
     echo "Found root filesystem dataset: ${root_fs_dataset}"
 
     ___ "Find the root filesystem dataset's first-level dataset"
-    local root_fs_dataset_first_level
-    root_fs_dataset_first_level="$(find_root_fs_dataset_first_level "${root_fs_dataset}" "${first_level_datasets[@]}")"
+    local root_fs_dataset_first_level=rpool/ROOT
+#    root_fs_dataset_first_level="$(find_root_fs_dataset_first_level "${root_fs_dataset}" "${first_level_datasets[@]}")"
 
     if [[ -z "${root_fs_dataset_first_level}" ]]; then
         echo "Root filesystem's first-level dataset not found. Cannot proceed."
@@ -323,19 +323,21 @@ main() {
     encrypt_dataset_or_load_key "prompt" "${root_fs_dataset_first_level}"
 
     local -a root_fs_dataset_and_ancestors_with_oldest_first_except_first_level=()
-    mapfile -t root_fs_dataset_and_ancestors_with_oldest_first_except_first_level < "$(get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level "${root_fs_dataset_first_level}" "${root_fs_dataset}" | create_temp_file)"
+#    mapfile -t root_fs_dataset_and_ancestors_with_oldest_first_except_first_level < "$(get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level "${root_fs_dataset_first_level}" "${root_fs_dataset}" | create_temp_file)"
 
     ___ "Encrypt the rest of the ${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[*]} datasets with inherited encryption properties"
-    for dataset in "${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[@]}"; do
-        encrypt_dataset_or_load_key "inherit" "${dataset}"
-    done
+    if ((${#root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[@]} > 0)); then
+        for dataset in "${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[@]}"; do
+            encrypt_dataset_or_load_key "inherit" "${dataset}"
+        done
+    fi
 
     ___ "Find all remaining unencrypted datasets in the selected pool"
-    local -a unencrypted_datasets=()
-    mapfile -t unencrypted_datasets < "$(zfs list -H -o name,encryption,keystatus \
-        -t filesystem -s name -r "${selected_pool}" | \
-        awk '($2 == "off" || ($2 != "off" && $3 == "none")) {print $1}' | \
-        create_temp_file)"
+    local -a unencrypted_datasets=(rpool/data rpool/var-lib-vz)
+#    mapfile -t unencrypted_datasets < "$(zfs list -H -o name,encryption,keystatus \
+#        -t filesystem -s name -r "${selected_pool}" | \
+#        awk '($2 == "off" || ($2 != "off" && $3 == "none")) {print $1}' | \
+#        create_temp_file)"
 
     if [[ ${#unencrypted_datasets[@]} -eq 0 ]]; then
         echo "No (more) unencrypted datasets found in ${selected_pool}. Done."
