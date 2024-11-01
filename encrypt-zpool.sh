@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/f66cfea/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh 2>&1 | less
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/9a1294b/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -419,9 +419,11 @@ encrypt_dataset_or_load_key() {
           dataset_option_arguments+=("-o" "keyformat=passphrase")
           dataset_option_arguments+=("-o" "keylocation=file://${CONFIGURED_KEY_FILE}")
       elif [[ "${encryption_type}" == "prompt" ]]; then
+          local temp_key_file
+          temp_key_file="$(generate_passphrase | create_key_file)"
           dataset_option_arguments+=("-o" "encryption=aes-256-gcm")
           dataset_option_arguments+=("-o" "keyformat=passphrase")
-          dataset_option_arguments+=("-o" "keylocation=prompt")
+          dataset_option_arguments+=("-o" "keylocation=file://${temp_key_file}")
       elif [[ "${encryption_type}" == "inherit" ]]; then
           : # nothing to do, just inherit
       else
@@ -452,6 +454,14 @@ encrypt_dataset_or_load_key() {
 
       ___ "Rename encrypted dataset"
       zfs rename "${encrypted_dataset}" "${dataset}"
+
+      ___ "Have the user choose a new encryption passphrase"
+      if [[ "${encryption_type}" == "prompt" ]]; then
+          until zfs set keylocation="prompt" "${encrypted_dataset}"; do
+              echo "Failed to set keylocation=prompt on ${encrypted_dataset}. Try again." >&2
+              sleep 1
+          done
+      fi
 }
 
 list_first_level_datasets() {
