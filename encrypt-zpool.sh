@@ -26,9 +26,9 @@
 #   - You'll be prompted for the passphrase during encryption
 #
 # Non-root datasets (mountpoint!=/)
-#   - Uses keyformat=passphrase with keylocation=file://${root_fs}/.${dataset_name}.key
-#   - Passphrases are automatically generated and stored in key files
-#   - Key files are protected (chmod 400, chattr +i)
+#   - Uses keyformat=passphrase with keylocation=file:///.zfs-encryption.key
+#   - Passphrase automatically generated and stored in key file
+#   - Key file protected (chmod 400, chattr +i)
 #
 # Note: This script is designed to be pipe-safe and can be interrupted safely
 # during download without leaving the system in an inconsistent state.
@@ -42,6 +42,8 @@ ___() {
 
 ___ "Global constants"
 readonly TEMP_ROOT_MOUNT="/mnt/tmp_encryption"
+readonly CONFIGURED_KEY_FILE="/.zfs-encryption.key"
+readonly CURRENT_KEY_FILE="${TEMP_ROOT_MOUNT}/${CONFIGURED_KEY_FILE}"
 
 ___ "Global variables for tracking state"
 declare -a MOUNTED_CHROOTS=()
@@ -53,15 +55,18 @@ cleanup() {
     local exit_code="${?}"
 
     # Cleanup any temporary files
-    for file in "${TEMP_FILES[@]}"; do
-        rm -f "${file}" || true
-    done
+    if ((${#TEMP_FILES[@]} > 0)); then
+        for file in "${TEMP_FILES[@]}"; do
+            rm -f "${file}" || true
+        done
+    fi
 
     ___ "Cleanup any remaining chroots"
-    for mountpoint in "${MOUNTED_CHROOTS[@]}"; do
-        cleanup_chroot "${mountpoint}" || true
-    done
-
+    if ((${#MOUNTED_CHROOTS[@]} > 0)); then
+        for mountpoint in "${MOUNTED_CHROOTS[@]}"; do
+            cleanup_chroot "${mountpoint}" || true
+        done
+    fi
 
     echo "Exporting all zpools..."
     zfs umount -a || true
@@ -83,7 +88,7 @@ create_temp_file() {
 ___ "Create a key file"
 create_key_file() {
   local key_file
-  key_file="${1:"$(echo "" | create_temp_file)"}"
+  key_file="${1:-"$(echo "" | create_temp_file)"}"
 
   mkdir -p "$(dirname "${key_file}")"
   touch "${key_file}"
@@ -100,9 +105,11 @@ generate_passphrase() {
 ___ "Get option arguments for all settable ZFS properties for a dataset"
 get_settable_properties_options_arguments() {
     local dataset
-    dataset="${1}"
-    local -a args
+    local -a except_keys
+    local -a result
 
+    dataset="${1}"
+    except_keys=("${@:2}")
 
     ___ "Get all properties that are:"
     ___ " - not default (source != 'default')"
@@ -118,6 +125,10 @@ get_settable_properties_options_arguments() {
             echo "Skipping property ${name} with value ${value} and source ${source}, because it is inherited." >&2
             continue
         fi
+        if [[ "${except_keys[*]}" =~ "${name}" ]]; then
+            echo "Skipping property ${name} with value ${value} and source ${source}, because it is explicitly excluded." >&2
+            continue
+        fi
         if [[ "${source}" == "-" ]]; then
             echo "Skipping property ${name} with value ${value} and source ${source}, because it is read-only." >&2
             continue
@@ -127,10 +138,14 @@ get_settable_properties_options_arguments() {
             continue
         fi
         echo "Adding property ${name} with value ${value} (source ${source}) to list of settable properties arguments." >&2
-        args+=("-o" "${name}=${value}")
+        result+=("-o" "${name}=${value}")
     done < "$(zfs get -pH -o property,value,source all "${dataset}" | create_temp_file)"
 
-    echo "${args[@]}"
+    if ((${#result[@]} > 0)); then
+        echo "${result[@]}"
+    else
+        echo ""
+    fi
 }
 
 setup_chroot() {
@@ -163,7 +178,11 @@ cleanup_chroot() {
     done
 
     ___ "Remove from global tracking array"
-    MOUNTED_CHROOTS=("${MOUNTED_CHROOTS[@]/${mountpoint}}")
+    local -a new_mounted_chroots=()
+    for dir in "${MOUNTED_CHROOTS[@]}"; do
+        [[ "${dir}" != "${mountpoint}" ]] && new_mounted_chroots+=("${dir}")
+    done
+    MOUNTED_CHROOTS=("${new_mounted_chroots[@]}")
 }
 
 create_unlock_service() {
@@ -219,7 +238,7 @@ find_root_filesystem() {
 
 ___ "Find the encryption root dataset"
 find_encryption_root() {
-    local dataset=
+    local dataset
     dataset="${1}"
 
     local encroot
@@ -230,146 +249,6 @@ find_encryption_root() {
     else
         echo "${encroot}"
     fi
-}
-
-check_and_load_root_key() {
-    local dataset=
-    dataset="${1}"
-    local encryption_root
-    local root_fs
-
-    root_fs="$(find_root_filesystem "$(echo "${dataset}" | cut -d/ -f1)")"
-    if [[ "${dataset}" == "${root_fs}" ]]; then
-        encryption_root="$(find_encryption_root "${dataset}")"
-        if [[ -n "${encryption_root}" ]]; then
-            echo "Root filesystem dataset ${dataset} is encrypted. Loading encryption key..."
-            if ! zfs load-key "${encryption_root}"; then
-                echo "Failed to load key for ${dataset}. Cannot proceed."
-                return 1
-            fi
-        fi
-    fi
-
-    return 0
-}
-
-encrypt_dataset() {
-    local dataset=
-    dataset="${1}"
-    local temp_mountpoint
-    local final_mountpoint
-    local snapshot_name
-    local encrypted_dataset
-    local root_fs
-    local -a option_arguments
-    local configured_root_mount
-    local configured_key_file
-    local temp_key_file
-
-    temp_mountpoint="$(zfs get -H -o value mountpoint "${dataset}")"
-    if [[ "${temp_mountpoint}" == "${TEMP_ROOT_MOUNT}" ]]; then
-        final_mountpoint="/"
-    else
-        final_mountpoint="${temp_mountpoint#"${TEMP_ROOT_MOUNT}"}"
-    fi
-    snapshot_name="${dataset}@pre_encryption_$(date +%Y%m%d_%H%M%S)"
-    encrypted_dataset="${dataset}_encrypted"
-    root_fs="$(find_root_filesystem "$(echo "${dataset}" | cut -d/ -f1)")"
-
-    echo "Processing dataset: ${dataset}"
-    echo "Creating snapshot: ${snapshot_name}"
-
-    ___ "Create snapshot with error handling"
-    if ! zfs snapshot "${snapshot_name}"; then
-        echo "Failed to create snapshot for ${dataset}"
-        return 1
-    fi
-
-    ___ "Get properties"
-    read -r -a option_arguments <<< "$(get_settable_properties_options_arguments "${dataset}")"
-
-    ___ "Get the configured (final) root mountpoint for key storage"
-    configured_root_mount="$(zfs get -H -o value mountpoint "${root_fs}")"
-
-    if [[ "${temp_mountpoint}" == "${TEMP_ROOT_MOUNT}" ]]; then
-        ___ "Handle root filesystem dataset"
-
-        ___ "Check that we have a TTY"
-        if [[ ! -t 0 ]]; then
-            echo "No TTY detected. Cannot prompt for passphrase. Exiting." >&2
-            exit 1
-        fi
-        ___ "Prompt for passphrase"
-        read -r -s -p "Enter passphrase for ${dataset}: " passphrase
-        echo
-
-        ___ "Create temporary key file"
-        temp_key_file="$(echo "${passphrase}" | create_key_file)"
-
-        ___ "Transfer data"
-        echo "Transferring data from ${snapshot_name} to ${encrypted_dataset}"
-        if ! zfs send -R "${snapshot_name}" | zfs receive -o encryption=aes-256-gcm \
-                                                                    -o keyformat=passphrase \
-                                                                    -o keylocation="file://${temp_key_file}" \
-                                                                    "${option_arguments[@]}" \
-                                                                    "${encrypted_dataset}"; then
-            echo "Failed to transfer data to ${encrypted_dataset}"
-            zfs destroy "${snapshot_name}"
-            zfs destroy -r "${encrypted_dataset}"
-            return 1
-        fi
-        zfs set -u keylocation="prompt" "${encrypted_dataset}"
-        zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
-        rm -f "${temp_key_file}"
-
-    else
-        local passphrase
-
-        ___ "Handle non-root filesystem dataset"
-        echo "Encrypting dataset: ${dataset}"
-
-        ___ "Set up both temporary and final key paths"
-        configured_key_file="${configured_root_mount}/.${dataset//\//_}.key"
-        temp_key_file="${TEMP_ROOT_MOUNT}/.${dataset//\//_}.key"
-
-        ___ "Create and secure key file in the temporary root filesystem location"
-        passphrase="$(generate_passphrase)"
-        if ! echo "${passphrase}" | create_key_file "${temp_key_file}"; then
-            echo "Failed to create key file ${temp_key_file}"
-            zfs destroy "${snapshot_name}"
-            return 1
-        fi
-
-        ___ "Transfer data"
-        echo "Transferring data from ${snapshot_name} to ${encrypted_dataset}"
-        if ! zfs send -R "${snapshot_name}" | zfs receive -u -o encryption=aes-256-gcm \
-                                                                      -o keyformat=passphrase \
-                                                                      -o keylocation="file://${configured_key_file}" \
-                                                                      "${option_arguments[@]}" \
-                                                                      "${encrypted_dataset}"; then
-            echo "Failed to transfer data to ${encrypted_dataset}"
-            rm -f "${temp_key_file}"
-            zfs destroy "${snapshot_name}"
-            zfs destroy -r "${encrypted_dataset}"
-            return 1
-        fi
-        echo "${passphrase}" | zfs load-key "${encrypted_dataset}"
-        zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
-    fi
-
-    ___ "Clean up original dataset and snapshot"
-    zfs destroy -r "${snapshot_name}"
-    zfs destroy -r "${dataset}"
-
-    ___ "Rename encrypted dataset"
-    if ! zfs rename "${encrypted_dataset}" "${dataset}"; then
-        echo "Failed to rename ${encrypted_dataset} to ${dataset}"
-        return 1
-    fi
-
-    ((ENCRYPTION_COUNT++))
-    echo "Successfully encrypted dataset: ${dataset}"
-    return 0
 }
 
 main() {
@@ -411,30 +290,54 @@ main() {
 
     echo "Selected pool: ${selected_pool}"
 
-    ___ "Find and handle root filesystem dataset first"
-    local root_fs
-    root_fs="$(find_root_filesystem "${selected_pool}")"
+    # NOTE: we imported the pool with -R "${TEMP_ROOT_MOUNT}" so all datasets' mountpoints are under "${TEMP_ROOT_MOUNT}"
+    # DONE: collect each first-level dataset in the pool.
+    # DONE: find the dataset that has mountpoint="${TEMP_ROOT_MOUNT}". this is the root filesystem dataset, typically rpool/ROOT/pve-1. save it in a variable named "root_fs_dataset"
+    # DONE: find the first level dataset that the root filesystem dataset belongs to, or is. typically rpool/ROOT. save it in a variable named "root_fs_dataset_first_level"
+    # DONE: encrypt_dataset "${root_fs_dataset_first_level}"
+    # DONE: zfs mount "${root_fs_dataset}"
+    # DONE: CONFIGURED_KEY_FILE="/.zfs-encryption.key"
+    # DONE: CURRENT_KEY_FILE="${TEMP_ROOT_MOUNT}/${CONFIGURED_KEY_FILE}"
+    # DONE: create_key_file "${CURRENT_KEY_FILE}"
+    # DONE: set encryption properties on the pool itself, that all current and future datasets will inherit, except "${root_fs_dataset_first_level}" which has its own encryption properties. zfs set -O encryption=aes-256-gcm -O keyformat=passphrase -O keylocation="file://${CURRENT_KEY_FILE}" "${selected_pool}"
+    # DONE: for each first-level dataset (except "${root_fs_dataset_first_level}", which is already encrypted): encrypt_dataset_or_load_key "file" "${dataset}"
+    # DONE: zfs set -u keylocation="${CONFIGURED_KEY_FILE}" "${selected_pool}"
 
-    if [[ -z "${root_fs}" ]]; then
-        ___ "If no root filesystem is found, we have no place to store keys"
-        echo "No root filesystem found. Cannot proceed."
+    ___ "Collect first-level datasets"
+    local -a first_level_datasets
+    mapfile -t first_level_datasets < "$(list_first_level_datasets "${selected_pool}" | create_temp_file)"
+
+    ___ "Find root filesystem dataset"
+    local root_fs_dataset
+    root_fs_dataset="$(find_root_filesystem "${selected_pool}")"
+
+    if [[ -z "${root_fs_dataset}" ]]; then
+        ___ "Root filesystem dataset not found, we have no place to store keys"
+        echo "Root filesystem dataset not found. Cannot proceed."
         exit 1
     fi
+    echo "Found root filesystem dataset: ${root_fs_dataset}"
 
-    echo "Found root filesystem dataset: ${root_fs}"
-    ___ "If root filesystem is unencrypted, encrypt it first"
-    if [[ -z "$(find_encryption_root "${root_fs}")" ]]; then
-        echo "Root filesystem is unencrypted. Encrypting it first..."
-        if ! encrypt_dataset "${root_fs}"; then
-            echo "Failed to encrypt root filesystem. Cannot proceed."
-            exit 1
-        fi
-    else
-        ___ "If root filesystem is already encrypted, load key"
-        if ! check_and_load_root_key "${root_fs}"; then
-            exit 1
-        fi
+    ___ "Find the root filesystem dataset's first-level dataset"
+    local root_fs_dataset_first_level
+    root_fs_dataset_first_level="$(find_root_fs_dataset_first_level "${root_fs_dataset}" "${first_level_datasets[@]}")"
+
+    if [[ -z "${root_fs_dataset_first_level}" ]]; then
+        echo "Root filesystem's first-level dataset not found. Cannot proceed."
+        exit 1
     fi
+    echo "Found root filesystem's first-level dataset: ${root_fs_dataset_first_level}"
+
+    ___ "Encrypt ${root_fs_dataset_first_level} with -o keylocation=prompt"
+    encrypt_dataset_or_load_key "prompt" "${root_fs_dataset_first_level}"
+
+    local -a root_fs_dataset_and_ancestors_with_oldest_first_except_first_level
+    mapfile -t root_fs_dataset_and_ancestors_with_oldest_first_except_first_level < <(get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level "${root_fs_dataset_first_level}" "${root_fs_dataset}")
+
+    ___ "Encrypt the rest of the ${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[*]} datasets with inherited encryption properties"
+    for dataset in "${root_fs_dataset_and_ancestors_with_oldest_first_except_first_level[@]}"; do
+        encrypt_dataset_or_load_key "inherit" "${dataset}"
+    done
 
     ___ "Find all remaining unencrypted datasets in the selected pool"
     local -a unencrypted_datasets
@@ -444,42 +347,173 @@ main() {
         create_temp_file)"
 
     if [[ ${#unencrypted_datasets[@]} -eq 0 ]]; then
-        echo "No unencrypted datasets found in ${selected_pool}. Exiting."
+        echo "No (more) unencrypted datasets found in ${selected_pool}. Done."
         exit 0
     fi
 
     echo "Found ${#unencrypted_datasets[@]} unencrypted datasets."
 
+    ___ "Create ${CURRENT_KEY_FILE}, unless already exists and is not empty"
+    zfs mount "${root_fs_dataset}"
+    if [[ -s "${CURRENT_KEY_FILE}" ]]; then
+        echo "Key file ${CURRENT_KEY_FILE} already exists and is not empty. Skipping creation." >&2
+    else
+        echo "Creating key file ${CURRENT_KEY_FILE}" >&2
+        generate_passphrase | create_key_file "${CURRENT_KEY_FILE}"
+    fi
+
+    ___ "Set encryption properties on the pool itself, that all current and future datasets will inherit, except ${root_fs_dataset_first_level} which has its own encryption properties"
+    zfs set -O encryption=aes-256-gcm -O keyformat=passphrase -O keylocation="file://${CURRENT_KEY_FILE}" "${selected_pool}"
+
     ___ "Process each unencrypted dataset"
     for dataset in "${unencrypted_datasets[@]}"; do
-        ___ "Skip root filesystem as it's already handled"
-        if [[ "${dataset}" == "${root_fs}" ]]; then
-            continue
-        fi
-
-        if ! encrypt_dataset "${dataset}"; then
+        if ! encrypt_dataset_or_load_key "file" "${dataset}"; then
             echo "Failed to encrypt ${dataset}. Continuing with remaining datasets..."
             continue
         fi
     done
 
+    ___ "Set correct keylocation for after boot"
+    zfs set -u -O keylocation="file://${CONFIGURED_KEY_FILE}" "${selected_pool}"
+
     ___ "Create and enable systemd unlock service if we encrypted anything"
     if ((ENCRYPTION_COUNT > 0)); then
-        if [[ -n "${root_fs}" ]]; then
-            if [[ -d "${TEMP_ROOT_MOUNT}" ]]; then
-                echo "Creating systemd unlock service..."
-                create_unlock_service "${TEMP_ROOT_MOUNT}"
-            fi
+        if [[ -d "${TEMP_ROOT_MOUNT}" ]]; then
+            echo "Creating systemd unlock service..."
+            create_unlock_service "${TEMP_ROOT_MOUNT}"
         fi
 
         echo "Successfully encrypted ${ENCRYPTION_COUNT} datasets!"
-        echo "IMPORTANT: You will find the encryption keys for non-root datasets in /.\${dataset_name}.key files, after boot."
-        echo "Make sure to back them up to a secure location for recovery purposes."
+        echo "IMPORTANT: You will find the encryption key for non-root datasets in ${CONFIGURED_KEY_FILE}, after boot."
+        echo "Make sure to back it up to a secure location for recovery purposes."
     else
         echo "No datasets were encrypted successfully."
     fi
 
     echo "Exiting..."
+}
+
+encrypt_dataset_or_load_key() {
+      local encryption_type
+      local dataset
+      local encrypted_dataset
+      local snapshot
+      local temp_mountpoint
+      local final_mountpoint
+      local -a dataset_option_arguments
+
+      encryption_type="${1}"
+      dataset="${2}"
+      encrypted_dataset="${dataset}_encrypted"
+      snapshot="${dataset}@pre_encryption_$(date +%Y%m%d_%H%M%S)"
+      temp_mountpoint="$(get_temp_mountpoint "${dataset}")"
+
+      if [[ "${temp_mountpoint}" == "${TEMP_ROOT_MOUNT}" ]]; then
+          final_mountpoint="/"
+      else
+          final_mountpoint="${temp_mountpoint#"${TEMP_ROOT_MOUNT}"}"
+      fi
+
+      if [[ "${encryption_type}" == "file" ]]; then
+          mapfile -t dataset_option_arguments < "$(get_settable_properties_options_arguments "${dataset}" encryption keyformat keylocation | create_temp_file)"
+          dataset_option_arguments+=("-o" "encryption=aes-256-gcm")
+          dataset_option_arguments+=("-o" "keyformat=passphrase")
+          dataset_option_arguments+=("-o" "keylocation=file://${CONFIGURED_KEY_FILE}")
+      elif [[ "${encryption_type}" == "prompt" ]]; then
+          mapfile -t dataset_option_arguments < "$(get_settable_properties_options_arguments "${dataset}" encryption keyformat keylocation | create_temp_file)"
+          dataset_option_arguments+=("-o" "encryption=aes-256-gcm")
+          dataset_option_arguments+=("-o" "keyformat=passphrase")
+          dataset_option_arguments+=("-o" "keylocation=prompt")
+      elif [[ "${encryption_type}" == "inherit" ]]; then
+          mapfile -t dataset_option_arguments < "$(get_settable_properties_options_arguments "${dataset}" | create_temp_file)"
+      else
+          echo "Unknown encryption type: ${encryption_type}" >&2
+          exit 1
+      fi
+
+      ___ "Take snapshot of ${dataset}"
+      zfs snapshot -R "${snapshot}"
+
+      ___ "Encrypt ${dataset}"
+      echo "Encrypting dataset: ${dataset}"
+
+      ___ "Transfer data"
+      echo "Transferring data from ${snapshot} to ${encrypted_dataset}"
+      if ! zfs send -R "${snapshot}" | zfs receive -u "${dataset_option_arguments[@]}" "${encrypted_dataset}"; then
+          echo "Failed to transfer data to ${encrypted_dataset}"
+          zfs destroy -r "${snapshot}"
+          zfs destroy -r "${encrypted_dataset}"
+          exit 1
+      fi
+      zfs set -u mountpoint="${final_mountpoint}" "${encrypted_dataset}"
+      ((ENCRYPTION_COUNT+=1))
+
+      ___ "Clean up original dataset and snapshot"
+      zfs destroy -r "${snapshot}"
+      zfs destroy -r "${dataset}"
+
+      ___ "Rename encrypted dataset"
+      zfs rename "${encrypted_dataset}" "${dataset}"
+}
+
+list_first_level_datasets() {
+    local pool="${1}"
+    zfs list -H -o name -d 1 "${pool}" | grep -v "^${pool}$"
+}
+
+find_root_fs_dataset_first_level() {
+    local root_fs_dataset="${1}"
+    shift
+    local -a first_level_datasets=("$@")
+
+    for dataset in "${first_level_datasets[@]}"; do
+        if [[ "${root_fs_dataset}" == "${dataset}" || "${root_fs_dataset}" =~ ^"${dataset}"/ ]]; then
+            echo "${dataset}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+get_root_fs_dataset_and_ancestors_with_oldest_first_except_first_level() {
+    local root_fs_dataset_first_level="${1}"
+    local root_fs_dataset="${2}"
+    local current
+    local -a ancestors
+
+    if [[ -z "${root_fs_dataset_first_level}" ]]; then
+        echo "ERROR: root_fs_dataset_first_level must be supplied as first argument" >&2
+        return 1
+    fi
+    if [[ -z "${root_fs_dataset}" ]]; then
+        echo "ERROR: root_fs_dataset must be supplied as second argument" >&2
+        return 1
+    fi
+
+    current="${root_fs_dataset}"
+    while [[ "${current}" != "${root_fs_dataset_first_level}" ]]; do
+        ancestors+=("${current}")
+        current="${current%/*}"
+    done
+
+    # Print in reverse order (oldest first)
+    for ((i=${#ancestors[@]}-1; i>=0; i--)); do
+        echo "${ancestors[i]}"
+    done
+}
+
+get_temp_mountpoint() {
+    local dataset
+    local current_mountpoint
+
+    dataset="${1}"
+    current_mountpoint="$(zfs get -H -o value mountpoint "${dataset}")"
+
+    if [[ "${current_mountpoint}" == "${TEMP_ROOT_MOUNT}" ]]; then
+        echo "/"
+    else
+        echo "${current_mountpoint#"${TEMP_ROOT_MOUNT}"}"
+    fi
 }
 
 main "$@"
