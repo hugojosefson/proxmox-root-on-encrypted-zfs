@@ -5,7 +5,7 @@
 # and properties.
 #
 # Usage:
-# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/0f71920/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && ./encrypt-zpool.sh | tee encrypt-zpool.log
+# wget -O encrypt-zpool.sh https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/fc18db7/encrypt-zpool.sh && chmod +x encrypt-zpool.sh && bash -x ./encrypt-zpool.sh 2>&1 | tee encrypt-zpool.log
 #
 # Prerequisites:
 #   - Proxmox VE 8 installation ISO
@@ -402,7 +402,6 @@ encrypt_dataset_or_load_key() {
       local dataset
       local encrypted_dataset
       local snapshot
-      local temp_mountpoint
       local final_mountpoint
       local -a dataset_option_arguments=()
 
