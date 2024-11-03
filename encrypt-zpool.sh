@@ -30,9 +30,6 @@
 #   - Passphrase automatically generated and stored in key file
 #   - Key file protected (chmod 400, chattr +i)
 #
-# TODO:
-#   - Install dropbear-initramfs in chroot
-#
 # Note: This script is designed to be pipe-safe and can be interrupted safely
 # during download without leaving the system in an inconsistent state.
 ###############################################################################
@@ -231,6 +228,72 @@ EOF
     cleanup_chroot "${mountpoint}"
 }
 
+install_dropbear_in_chroot() {
+    local mountpoint
+    mountpoint="${1}"
+
+    if ! chroot "${mountpoint}" apt install -y dropbear-initramfs; then
+        echo "Failed to install dropbear-initramfs. Manual intervention may be required."
+        cleanup_chroot "${mountpoint}"
+        return 1
+    fi
+
+    ___ "Set up chroot environment with error handling"
+    if ! setup_chroot "${mountpoint}"; then
+        echo "Failed to set up chroot environment. Skipping service enablement."
+        return 1
+    fi
+
+    ___ "Install dropbear-initramfs in chroot"
+    if ! (chroot "${mountpoint}" bash <<'EOF'
+set -euo pipefail
+IFS=$'\n\t'
+
+apt update || true # will fail to download proxmox enterprise repos, but denian is fine
+apt install -y --no-install-recommends dropbear-initramfs
+auth_keys_source="/root/.ssh/authorized_keys"
+auth_keys_destination="/etc/dropbear/initramfs/authorized_keys"
+if [[ -e "${auth_keys_destination}" ]]; then
+    echo "File ${auth_keys_destination} already exists. Skipping creation." >&2
+elif ! [[ -r "${auth_keys_source}" ]]; then
+    echo "File ${auth_keys_source} does not exist. Skipping creation of ${auth_keys_destination}." >&2
+else
+    echo "Creating file ${auth_keys_destination}" >&2
+    mkdir -p "$(dirname "${auth_keys_destination}")"
+    touch "${auth_keys_destination}"
+    chmod 600 "${auth_keys_destination}"
+
+    # lock all keys to only allow unlocking with zfsunlock
+    cat "${auth_keys_source}" | \
+      sed -E 's|^|command=/usr/bin/zfsunlock |g' | \
+      tee "${auth_keys_destination}" >&2
+fi
+
+# add IP= line to /etc/initramfs-tools/initramfs.conf
+CIDR="$(ip -o -f inet addr show | awk '/scope global/ {print $4}')"
+ADDRESS="${CIDR%%/*}"
+NETMASK_NUMBER_OF_BITS="${CIDR##*/}"
+NETMASK="$(echo $(( ((1<<32)-1) << (32-$NETMASK_NUMBER_OF_BITS) )) | perl -ne 'printf "%d.%d.%d.%d", ($_>>24)&255, ($_>>16)&255, ($_>>8)&255, $_&255')"
+GATEWAY="$(ip -o -f inet route show | awk '/default/ {print $3}')"
+FQDN="$(hostname -f)"
+IP="${ADDRESS}::${GATEWAY}:${NETMASK}:${FQDN}"
+echo -e "CIDR: ${CIDR}\nAddress: ${ADDRESS}\nNetmask: ${NETMASK}\nGateway: ${GATEWAY}\nFQDN: ${FQDN}\nIP: ${IP}" >&2
+
+cat >> /etc/initramfs-tools/initramfs.conf <<EOF
+IP=${IP}
+EOF
+
+update-initramfs -uk all
+EOF
+); then
+        echo "Failed to install and configure dropbear-initramfs. Manual intervention may be required."
+        cleanup_chroot "${mountpoint}"
+        return 1
+    fi
+
+    cleanup_chroot "${mountpoint}"
+}
+
 ___ "Find the root filesystem dataset (mounted at ${TEMP_ROOT_MOUNT})"
 find_root_filesystem() {
     local pool
@@ -367,21 +430,23 @@ main() {
         fi
     done
 
-    ___ "Create and enable systemd unlock service if we encrypted anything"
-    if ((ENCRYPTION_COUNT > 0)); then
-        if [[ -d "${TEMP_ROOT_MOUNT}" ]]; then
-            echo "Creating systemd unlock service..."
-            create_unlock_service "${TEMP_ROOT_MOUNT}"
-        fi
-
-        echo "Successfully encrypted ${ENCRYPTION_COUNT} datasets!"
-        echo "IMPORTANT: You will find the encryption key for non-root datasets in ${FINAL_KEY_FILE}, after boot."
-        echo "Make sure to back it up to a secure location for recovery purposes."
-    else
-        echo "No datasets were encrypted successfully."
+    ___ "Create and enable systemd unlock service"
+    if [[ -d "${TEMP_ROOT_MOUNT}" ]]; then
+        echo "Creating systemd unlock service..."
+        create_unlock_service "${TEMP_ROOT_MOUNT}"
     fi
 
-    echo "Exiting..."
+    ___ "Install dropbear-initramfs in chroot"
+    if [[ -d "${TEMP_ROOT_MOUNT}" ]]; then
+        echo "Installing dropbear-initramfs in chroot..."
+        install_dropbear_in_chroot "${TEMP_ROOT_MOUNT}"
+    fi
+
+    echo "Successfully encrypted ${ENCRYPTION_COUNT} datasets!"
+    echo "IMPORTANT: You will find the encryption key for non-root datasets in ${FINAL_KEY_FILE}, after boot."
+    echo "Make sure to back it up to a secure location for recovery purposes."
+
+    echo "Exiting..." >&2
 }
 
 is_key_loaded_for() {
