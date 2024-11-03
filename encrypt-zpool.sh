@@ -30,6 +30,9 @@
 #   - Passphrase automatically generated and stored in key file
 #   - Key file protected (chmod 400, chattr +i)
 #
+# TODO:
+#   - Install dropbear-initramfs in chroot
+#
 # Note: This script is designed to be pipe-safe and can be interrupted safely
 # during download without leaving the system in an inconsistent state.
 ###############################################################################
