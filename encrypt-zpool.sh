@@ -265,7 +265,7 @@ else
 
     # lock all keys to only allow unlocking with zfsunlock
     cat "${auth_keys_source}" | \
-      sed -E 's|^|command=/usr/bin/zfsunlock |g' | \
+      sed -E 's|^|command="/usr/bin/zfsunlock" |g' | \
       tee "${auth_keys_destination}" >&2
 fi
 
