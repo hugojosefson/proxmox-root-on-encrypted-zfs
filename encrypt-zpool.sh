@@ -269,7 +269,8 @@ else
       tee "${auth_keys_destination}" >&2
 fi
 
-# add IP= line to /etc/initramfs-tools/initramfs.conf
+initramfs_conf_file="/etc/initramfs-tools/initramfs.conf"
+# add IP= line to ${initramfs_conf_file}
 CIDR="$(ip -o -f inet addr show | awk '/scope global/ {print $4}')"
 ADDRESS="${CIDR%%/*}"
 NETMASK_NUMBER_OF_BITS="${CIDR##*/}"
@@ -277,11 +278,46 @@ NETMASK="$(echo $(( ((1<<32)-1) << (32-$NETMASK_NUMBER_OF_BITS) )) | perl -ne 'p
 GATEWAY="$(ip -o -f inet route show | awk '/default/ {print $3}')"
 FQDN="$(hostname -f)"
 IP="${ADDRESS}::${GATEWAY}:${NETMASK}:${FQDN}"
-echo -e "CIDR: ${CIDR}\nAddress: ${ADDRESS}\nNetmask: ${NETMASK}\nGateway: ${GATEWAY}\nFQDN: ${FQDN}\nIP: ${IP}" >&2
-
-cat >> /etc/initramfs-tools/initramfs.conf <<EOF
+tee -a "${initramfs_conf_file}" <<EOF
 IP=${IP}
 EOF
+
+# add DEVICE= line to ${initramfs_conf_file}, if we can find a real device
+possible_real_device="$(ip -o -f inet addr show | awk '/scope global/ {print $2}')"
+DEVICE="${possible_real_device}"
+seen_devices=(lo)
+# if we have seen this device before, we're done, failed
+if [[ -n "${DEVICE}" ]] && echo "${seen_devices[@]}" | grep -qFw "${DEVICE}"; then
+    DEVICE=""
+fi
+
+while [[ -n "${DEVICE}" ]] && [[ -n "${possible_real_device}" ]]; do
+    # is there a device that has $DEVICE as its master?
+    possible_real_device="$(ip link show | perl -lne 'print $1 if /^[0-9]+: +([^:]+):.*\bmaster '"${DEVICE}"'\b/;')"
+
+    # if we have seen this device before, we're done, failed
+    if [[ -n "${possible_real_device}" ]] && echo "${seen_devices[@]}" | grep -qFw "${possible_real_device}"; then
+        DEVICE=""
+        break;
+    fi
+
+    # could not find a realer device?
+    if [[ -z "${possible_real_device}" ]]; then
+      # DEVICE is already the actual device
+      break;
+    fi
+
+    seen_devices+=("${possible_real_device}")
+    DEVICE="${possible_real_device}"
+done
+
+if [[ -z "${DEVICE}" ]]; then
+  echo "WARNING: Could not find actual network device, so not setting DEVICE= in ${initramfs_conf_file}" >&2
+else
+  tee -a "${initramfs_conf_file}" <<EOF
+DEVICE=${DEVICE}
+EOF
+fi
 
 update-initramfs -uk all
 EOF
