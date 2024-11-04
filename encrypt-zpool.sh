@@ -270,8 +270,7 @@ ADDRESS="${CIDR%%/*}"
 NETMASK_NUMBER_OF_BITS="${CIDR##*/}"
 NETMASK="$(echo $(( ((1<<32)-1) << (32-$NETMASK_NUMBER_OF_BITS) )) | perl -ne 'printf "%d.%d.%d.%d", ($_>>24)&255, ($_>>16)&255, ($_>>8)&255, $_&255')"
 GATEWAY="$(ip -o -f inet route show | awk '/default/ {print $3}')"
-FQDN="$(hostname -f)"
-IP="${ADDRESS}::${GATEWAY}:${NETMASK}:${FQDN}"
+IP="${ADDRESS}::${GATEWAY}:${NETMASK}"
 printf "\nIP=%s\n" "${IP}" | tee -a "${initramfs_conf_file}"
 
 # add DEVICE= line to ${initramfs_conf_file}, if we can find a real device
