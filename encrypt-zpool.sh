@@ -272,9 +272,7 @@ NETMASK="$(echo $(( ((1<<32)-1) << (32-$NETMASK_NUMBER_OF_BITS) )) | perl -ne 'p
 GATEWAY="$(ip -o -f inet route show | awk '/default/ {print $3}')"
 FQDN="$(hostname -f)"
 IP="${ADDRESS}::${GATEWAY}:${NETMASK}:${FQDN}"
-tee -a "${initramfs_conf_file}" <<EOF
-IP=${IP}
-EOF
+printf "\nIP=%s\n" "${IP}" | tee -a "${initramfs_conf_file}"
 
 # add DEVICE= line to ${initramfs_conf_file}, if we can find a real device
 possible_real_device="$(ip -o -f inet addr show | awk '/scope global/ {print $2}')"
@@ -308,9 +306,7 @@ done
 if [[ -z "${DEVICE}" ]]; then
   echo "WARNING: Could not find actual network device, so not setting DEVICE= in ${initramfs_conf_file}" >&2
 else
-  tee -a "${initramfs_conf_file}" <<EOF
-DEVICE=${DEVICE}
-EOF
+  printf "\nDEVICE=%s\n" "${DEVICE}" | tee -a "${initramfs_conf_file}"
 fi
 
 update-initramfs -uk all
