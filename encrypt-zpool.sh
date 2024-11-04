@@ -436,11 +436,6 @@ main() {
         grep -v "^${selected_pool}$" | \
         create_temp_file)"
 
-    if [[ ${#unencrypted_datasets[@]} -eq 0 ]]; then
-        echo "No (more) unencrypted datasets found in ${selected_pool}. Done."
-        exit 0
-    fi
-
     echo "Found ${#unencrypted_datasets[@]} unencrypted datasets."
 
     ___ "Mount ${root_fs_dataset}"
