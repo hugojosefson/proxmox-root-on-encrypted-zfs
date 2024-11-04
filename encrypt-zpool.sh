@@ -232,12 +232,6 @@ install_dropbear_in_chroot() {
     local mountpoint
     mountpoint="${1}"
 
-    if ! chroot "${mountpoint}" apt install -y dropbear-initramfs; then
-        echo "Failed to install dropbear-initramfs. Manual intervention may be required."
-        cleanup_chroot "${mountpoint}"
-        return 1
-    fi
-
     ___ "Set up chroot environment with error handling"
     if ! setup_chroot "${mountpoint}"; then
         echo "Failed to set up chroot environment. Skipping service enablement."
@@ -449,8 +443,10 @@ main() {
 
     echo "Found ${#unencrypted_datasets[@]} unencrypted datasets."
 
-    ___ "Create ${CURRENT_KEY_FILE}, unless already exists and is not empty"
+    ___ "Mount ${root_fs_dataset}"
     zfs mount "${root_fs_dataset}"
+
+    ___ "Create ${CURRENT_KEY_FILE}, unless already exists and is not empty"
     if [[ -s "${CURRENT_KEY_FILE}" ]]; then
         echo "Key file ${CURRENT_KEY_FILE} already exists and is not empty. Skipping creation." >&2
     else
@@ -459,12 +455,14 @@ main() {
     fi
 
     ___ "Process each unencrypted dataset"
-    for dataset in "${unencrypted_datasets[@]}"; do
-        if ! encrypt_dataset_or_load_key "file" "${dataset}"; then
-            echo "Failed to encrypt ${dataset}. Continuing with remaining datasets..."
-            continue
-        fi
-    done
+    if ((${#unencrypted_datasets[@]} > 0)); then
+        for dataset in "${unencrypted_datasets[@]}"; do
+            if ! encrypt_dataset_or_load_key "file" "${dataset}"; then
+                echo "Failed to encrypt ${dataset}. Continuing with remaining datasets..."
+                continue
+            fi
+        done
+    fi
 
     ___ "Create and enable systemd unlock service"
     if [[ -d "${TEMP_ROOT_MOUNT}" ]]; then
