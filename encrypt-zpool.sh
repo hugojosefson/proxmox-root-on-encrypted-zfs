@@ -243,7 +243,7 @@ install_dropbear_in_chroot() {
 set -euo pipefail
 IFS=$'\n\t'
 
-apt update || true # will fail to download proxmox enterprise repos, but denian is fine
+apt update || true # will fail to download proxmox enterprise repos, but debian is fine
 apt install -y --no-install-recommends dropbear-initramfs
 auth_keys_source="/root/.ssh/authorized_keys"
 auth_keys_destination="/etc/dropbear/initramfs/authorized_keys"
@@ -272,41 +272,6 @@ NETMASK="$(echo $(( ((1<<32)-1) << (32-$NETMASK_NUMBER_OF_BITS) )) | perl -ne 'p
 GATEWAY="$(ip -o -f inet route show | awk '/default/ {print $3}')"
 IP="${ADDRESS}::${GATEWAY}:${NETMASK}"
 printf "\nIP=%s\n" "${IP}" | tee -a "${initramfs_conf_file}"
-
-# add DEVICE= line to ${initramfs_conf_file}, if we can find a real device
-possible_real_device="$(ip -o -f inet addr show | awk '/scope global/ {print $2}')"
-DEVICE="${possible_real_device}"
-seen_devices=(lo)
-# if we have seen this device before, we're done, failed
-if [[ -n "${DEVICE}" ]] && echo "${seen_devices[@]}" | grep -qFw "${DEVICE}"; then
-    DEVICE=""
-fi
-
-while [[ -n "${DEVICE}" ]] && [[ -n "${possible_real_device}" ]]; do
-    # is there a device that has $DEVICE as its master?
-    possible_real_device="$(ip link show | perl -lne 'print $1 if /^[0-9]+: +([^:]+):.*\bmaster '"${DEVICE}"'\b/;')"
-
-    # if we have seen this device before, we're done, failed
-    if [[ -n "${possible_real_device}" ]] && echo "${seen_devices[@]}" | grep -qFw "${possible_real_device}"; then
-        DEVICE=""
-        break;
-    fi
-
-    # could not find a realer device?
-    if [[ -z "${possible_real_device}" ]]; then
-      # DEVICE is already the actual device
-      break;
-    fi
-
-    seen_devices+=("${possible_real_device}")
-    DEVICE="${possible_real_device}"
-done
-
-if [[ -z "${DEVICE}" ]]; then
-  echo "WARNING: Could not find actual network device, so not setting DEVICE= in ${initramfs_conf_file}" >&2
-else
-  printf "\nDEVICE=%s\n" "${DEVICE}" | tee -a "${initramfs_conf_file}"
-fi
 
 update-initramfs -uk all
 EOF
