@@ -4,7 +4,7 @@ import { chrootZfsBpool } from "./chroot-zfs-bpool.ts";
 export const chrootTmpfs = inChrootCommand(
   "chrootTmpfs",
   `
-cp /usr/share/systemd/tmp.mount /etc/systemd/system/
+cp /usr/lib/systemd/system/tmp.mount /etc/systemd/system/
 systemctl enable tmp.mount
 `,
 )

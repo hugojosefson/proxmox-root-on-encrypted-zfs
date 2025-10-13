@@ -39,7 +39,7 @@ password for zfs:
 
 -------------------------------------------------------------
 Continue installing Proxmox VE Kernel etc, at
-https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_12_Bookworm#Install_the_Proxmox_VE_Kernel
+https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_13_Trixie#Install_the_Proxmox_VE_Kernel
 =============================================================
 
 `);

@@ -5,9 +5,9 @@ with native encryption.
 
 This is a more automated way of following these guides:
 
-- [Debian Bookworm Root on ZFS](https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/Debian%20Bookworm%20Root%20on%20ZFS.html)
+- [Debian (Bookworm) Root on ZFS](https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/Debian%20Bookworm%20Root%20on%20ZFS.html)
   (via [OpenZFS Documentation](https://openzfs.github.io/openzfs-docs/))
-- [Install Proxmox VE on Debian 12 Bookworm](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_12_Bookworm)
+- [Install Proxmox VE on Debian 13 Trixie](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_13_Trixie)
   (via [Proxmox VE official wiki](https://pve.proxmox.com/wiki))
 
 ## Opinionated
@@ -32,12 +32,23 @@ Only do the first item in the list (until _Open a terminal_).
 > **Tip!**
 >
 > If you want to boot much faster, and get dropped into a shell immediately, you
-> may want to use `debian-live-12.*-amd64-standard.iso`! Download it from the
+> may want to use `debian-live-13.*-amd64-standard.iso`! Download it from the
 > same place as the other ISO:
 >
 > [https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/](https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/)
 >
 > Log in as `user`, with password `live`, if asked.
+
+Also, it might be helpful to install openssh and connect to it from another machine:
+```bash
+sudo apt install openssh-server
+```
+
+Make sure that the drives you want to install to are empty, as the script will only use the free (unformatted) space before and you might get errors due to lack of space:
+
+```bash
+wipefs -a /dev/disk-device
+```
 
 Instead of editing files etc. manually, launch this automated script from the
 terminal:
@@ -68,6 +79,15 @@ sudo  NON_INTERACTIVE=true \
         https://raw.githubusercontent.com/hugojosefson/proxmox-root-on-encrypted-zfs/main/src/cli.ts \
         debian
 ```
+If the installation fails with an error about ZFS module not being loaded, try this first
+
+```bash
+sudo apt install -y zfs-dkms zfsutils-linux
+sudo apt install linux-headers-$(uname -r)
+sudo dpkg-reconfigure zfs-dkms
+sudo modprobe zfs
+```
+and then re-run the installation script.
 
 > If you want to inspect the chroot:
 >
@@ -92,8 +112,8 @@ encryption key.
 Login as `root`.
 
 Continue manually at
-[Install Proxmox VE Kernel etc](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_12_Bookworm#Install_the_Proxmox_VE_Kernel)
-in the _Install Proxmox VE on Debian 12 Bookworm_ guide.
+[Install Proxmox VE Kernel etc](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_13_Trixie#Install_the_Proxmox_VE_Kernel)
+in the _Install Proxmox VE on Debian 13 Trixie_ guide.
 
 ## Opinionated: Specifics
 
@@ -198,7 +218,7 @@ Skip the rest;
 
 ### Proxmox VE
 
-#### Install a standard Debian 12 Bookworm (amd64)
+#### Install a standard Debian 13 Trixie (amd64)
 
 ##### Add an /etc/hosts entry for your IP address
 
@@ -220,6 +240,17 @@ Skip the rest;
   leaving it up to manual installation and configuration.
 
 See
-[Install Proxmox VE Kernel](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_12_Bookworm#Install_the_Proxmox_VE_Kernel)
-and the following sections in the _Install Proxmox VE on Debian 12 Bookworm_
+[Install Proxmox VE Kernel](https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_13_Trixie#Install_the_Proxmox_VE_Kernel)
+and the following sections in the _Install Proxmox VE on Debian 13 Trixie
 guide.
+
+#### Additional notes about Dropbear
+- use ```zfsunlock``` to get the password prompt when you login to Dropbear-initramfs
+- use the user 'root' 
+- to generate a compatible key (run on a client computer): ```ssh-keygen -t rsa -f ~/.ssh/pve-dropbear```
+- then copy the generated .pub to ``` /etc/dropbear/initramfs/authorized_keys```
+- if you want dropbear to only ask for the password, add this in front of the public key in auhtorized_keys:
+``` no-port-forwarding,no-agent-forwarding,command="/bin/zfsunlock" ssh-rsa ...```
+- to update initramfs after updating the key, run
+``` update-initramfs -u -k all ```
+
